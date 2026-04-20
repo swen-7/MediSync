@@ -49,6 +49,26 @@ export interface SupervisorRate {
   rate: number;
 }
 
+export interface CalEvent {
+  id: number;
+  date: string; // YYYY-MM-DD
+  title: string;
+  type: "doc" | "medexp" | "med_schedule" | "other";
+  elder: string;
+  color: string;
+}
+
+export const EVENT_COLOURS = [
+  "#1890a0", "#2a9d6e", "#e05555", "#d98f20", "#7c3aed",
+  "#e57373", "#4caf50", "#2196f3", "#ff7043", "#8d6e63",
+];
+
+export const DAYS_SHORT = ["S", "M", "T", "W", "T", "F", "S"];
+export const MONS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 interface UndoState {
   msg: string;
   undo: () => void;
@@ -66,6 +86,10 @@ interface PingState {
   supervisorRates: SupervisorRate[];
   undoToast: UndoState | null;
 
+  calViewDate: Date;
+  calSelDate: string | null;
+  calEvents: CalEvent[];
+
   toggleTheme: () => void;
   cycleLang: () => void;
   setLoginRole: (r: Role) => void;
@@ -77,6 +101,11 @@ interface PingState {
   resolveAlert: (id: number) => void;
   showUndo: (msg: string, undo: () => void) => void;
   clearUndo: () => void;
+
+  setCalViewDate: (d: Date) => void;
+  setCalSelDate: (d: string | null) => void;
+  addCalEvent: (e: Omit<CalEvent, "id">) => void;
+  deleteCalEvent: (id: number) => void;
 }
 
 let undoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -119,6 +148,15 @@ export const usePingStore = create<PingState>((set, get) => ({
     { name: "James Lim", rate: 79 },
   ],
   undoToast: null,
+
+  calViewDate: new Date(),
+  calSelDate: null,
+  calEvents: [
+    { id: 1, date: "2026-04-22", title: "Grandma Rose — Cardiologist", type: "doc", elder: "Grandma Rose", color: "#1890a0" },
+    { id: 2, date: "2026-04-28", title: "Amlodipine 5mg expires", type: "medexp", elder: "Grandma Rose", color: "#e05555" },
+    { id: 3, date: "2026-05-05", title: "Uncle David — Cardiology follow-up", type: "doc", elder: "Uncle David", color: "#1890a0" },
+    { id: 4, date: "2026-04-26", title: "Amlodipine 5mg — Refill reminder", type: "med_schedule", elder: "Grandma Rose", color: "#2a9d6e" },
+  ],
 
   toggleTheme: () => {
     const next = get().theme === "light" ? "dark" : "light";
@@ -169,6 +207,11 @@ export const usePingStore = create<PingState>((set, get) => ({
     if (undoTimer) clearTimeout(undoTimer);
     set({ undoToast: null });
   },
+
+  setCalViewDate: (d) => set({ calViewDate: d, calSelDate: null }),
+  setCalSelDate: (d) => set({ calSelDate: d }),
+  addCalEvent: (e) => set({ calEvents: [...get().calEvents, { ...e, id: Date.now() }] }),
+  deleteCalEvent: (id) => set({ calEvents: get().calEvents.filter((e) => e.id !== id) }),
 }));
 
 import { LANGS } from "@/lib/translations";
