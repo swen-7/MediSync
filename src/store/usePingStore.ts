@@ -207,6 +207,11 @@ export const usePingStore = create<PingState>((set, get) => ({
     if (undoTimer) clearTimeout(undoTimer);
     set({ undoToast: null });
   },
+
+  setCalViewDate: (d) => set({ calViewDate: d, calSelDate: null }),
+  setCalSelDate: (d) => set({ calSelDate: d }),
+  addCalEvent: (e) => set({ calEvents: [...get().calEvents, { ...e, id: Date.now() }] }),
+  deleteCalEvent: (id) => set({ calEvents: get().calEvents.filter((e) => e.id !== id) }),
 }));
 
 import { LANGS } from "@/lib/translations";
