@@ -14,16 +14,262 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      medication_logs: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          due_at: string
+          id: string
+          medication_id: string
+          notes: string | null
+          patient_id: string
+          resolved_at: string | null
+          resolved_by_caregiver_id: string | null
+          status: Database["public"]["Enums"]["log_status"]
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          due_at: string
+          id?: string
+          medication_id: string
+          notes?: string | null
+          patient_id: string
+          resolved_at?: string | null
+          resolved_by_caregiver_id?: string | null
+          status?: Database["public"]["Enums"]["log_status"]
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          due_at?: string
+          id?: string
+          medication_id?: string
+          notes?: string | null
+          patient_id?: string
+          resolved_at?: string | null
+          resolved_by_caregiver_id?: string | null
+          status?: Database["public"]["Enums"]["log_status"]
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_logs_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medications: {
+        Row: {
+          active: boolean
+          created_at: string
+          custom_days: number[]
+          dosage: string
+          frequency: string
+          id: string
+          med_name: string
+          patient_id: string
+          picture_url: string | null
+          refill_reminder_days: number
+          remaining_qty: number
+          scheduled_time: string
+          total_qty: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          custom_days?: number[]
+          dosage?: string
+          frequency?: string
+          id?: string
+          med_name: string
+          patient_id: string
+          picture_url?: string | null
+          refill_reminder_days?: number
+          remaining_qty?: number
+          scheduled_time?: string
+          total_qty?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          custom_days?: number[]
+          dosage?: string
+          frequency?: string
+          id?: string
+          med_name?: string
+          patient_id?: string
+          picture_url?: string | null
+          refill_reminder_days?: number
+          remaining_qty?: number
+          scheduled_time?: string
+          total_qty?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patient_settings: {
+        Row: {
+          affirmation_notifications_enabled: boolean
+          caregiver_phone: string | null
+          patient_id: string
+          push_notifications_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          affirmation_notifications_enabled?: boolean
+          caregiver_phone?: string | null
+          patient_id: string
+          push_notifications_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          affirmation_notifications_enabled?: boolean
+          caregiver_phone?: string | null
+          patient_id?: string
+          push_notifications_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patients_caregivers: {
+        Row: {
+          caregiver_id: string
+          id: string
+          linked_at: string
+          patient_id: string
+        }
+        Insert: {
+          caregiver_id: string
+          id?: string
+          linked_at?: string
+          patient_id: string
+        }
+        Update: {
+          caregiver_id?: string
+          id?: string
+          linked_at?: string
+          patient_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          invite_code: string | null
+          language_pref: Database["public"]["Enums"]["lang_code"]
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id: string
+          invite_code?: string | null
+          language_pref?: Database["public"]["Enums"]["lang_code"]
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          invite_code?: string | null
+          language_pref?: Database["public"]["Enums"]["lang_code"]
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vitals: {
+        Row: {
+          blood_pressure_dia: number
+          blood_pressure_sys: number
+          created_at: string
+          id: string
+          note: string | null
+          patient_id: string
+          pulse: number | null
+          taken_at: string
+        }
+        Insert: {
+          blood_pressure_dia: number
+          blood_pressure_sys: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          patient_id: string
+          pulse?: number | null
+          taken_at?: string
+        }
+        Update: {
+          blood_pressure_dia?: number
+          blood_pressure_sys?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          patient_id?: string
+          pulse?: number | null
+          taken_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_invite_code: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_linked_caregiver: { Args: { _patient_id: string }; Returns: boolean }
+      redeem_invite_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "caregiver" | "patient"
+      lang_code: "en" | "ms" | "zh"
+      log_status: "confirmed" | "missed" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +396,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["caregiver", "patient"],
+      lang_code: ["en", "ms", "zh"],
+      log_status: ["confirmed", "missed", "pending"],
+    },
   },
 } as const

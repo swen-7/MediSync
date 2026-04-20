@@ -1,12 +1,29 @@
-import { Link, useLocation, useRouter } from "@tanstack/react-router";
+import { Link, useLocation, useRouter, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { usePingStore, initials, useT_hook } from "@/store/usePingStore";
+import { useAuth } from "@/integrations/supabase/auth-provider";
 
 export function AppShell({ title, children }: { title?: string; children: ReactNode }) {
   const router = useRouter();
+  const navigate = useNavigate();
   const t = useT_hook();
-  const { theme, lang, user, toggleTheme, cycleLang } = usePingStore();
+  const { theme, lang, toggleTheme, cycleLang, setLang } = usePingStore();
+  const { profile, session, signOut } = useAuth();
   const langLabel = ({ en: "EN", ms: "BM", zh: "中文" } as const)[lang];
+
+  // Hydrate UI language from saved profile preference (one-time on login)
+  useEffect(() => {
+    if (profile?.language_pref && profile.language_pref !== lang) {
+      setLang(profile.language_pref);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate({ to: "/" });
+  };
 
   return (
     <div className="min-h-screen flex flex-col max-w-[480px] mx-auto bg-background relative">
@@ -19,7 +36,7 @@ export function AppShell({ title, children }: { title?: string; children: ReactN
           >
             ←
           </button>
-          {!user && (
+          {!session && (
             <Link to="/" className="font-display text-2xl font-semibold text-green ml-1 tracking-tight">
               Ping<span className="text-foreground">.</span>
             </Link>
@@ -41,27 +58,31 @@ export function AppShell({ title, children }: { title?: string; children: ReactN
           >
             {theme === "light" ? t("dark") : t("light")}
           </button>
-          {user && (
-            <div className="w-[34px] h-[34px] rounded-full bg-green-l border-2 border-green-m flex items-center justify-center text-[0.7rem] font-extrabold text-green">
-              {initials(user.name)}
-            </div>
+          {profile && (
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="w-[34px] h-[34px] rounded-full bg-green-l border-2 border-green-m flex items-center justify-center text-[0.7rem] font-extrabold text-green hover:bg-red-l hover:border-red hover:text-red transition-colors"
+            >
+              {initials(profile.full_name || "U")}
+            </button>
           )}
         </div>
       </nav>
 
       {children}
 
-      {user && <BottomTabs />}
+      {profile && <BottomTabs />}
       <UndoToast />
     </div>
   );
 }
 
 function BottomTabs() {
-  const { user } = usePingStore();
+  const { profile } = useAuth();
   const t = useT_hook();
   const location = useLocation();
-  if (!user) return null;
+  if (!profile) return null;
 
   const supTabs = [
     { to: "/dashboard", icon: "🏠", lbl: t("home_tab") },
@@ -76,7 +97,7 @@ function BottomTabs() {
     { to: "/history", icon: "📊", lbl: t("history_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
   ];
-  const tabs = user.role === "supervisor" ? supTabs : eldTabs;
+  const tabs = profile.role === "patient" ? eldTabs : supTabs;
 
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[var(--tab-bg)] border-t border-border flex pt-1.5 pb-4 z-[200] shadow-[0_-2px_12px_rgba(0,0,0,0.07)]">

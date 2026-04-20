@@ -104,6 +104,7 @@ interface PingState {
 
   toggleTheme: () => void;
   cycleLang: () => void;
+  setLang: (l: Lang) => void;
   setLoginRole: (r: Role) => void;
   setLoginMode: (m: "login" | "signup") => void;
   doLogin: () => void;
@@ -192,6 +193,7 @@ export const usePingStore = create<PingState>((set, get) => ({
     const cur = get().lang;
     set({ lang: order[(order.indexOf(cur) + 1) % order.length] });
   },
+  setLang: (l) => set({ lang: l }),
   setLoginRole: (r) => set({ loginRole: r }),
   setLoginMode: (m) => set({ loginMode: m }),
   doLogin: () => {
@@ -266,4 +268,17 @@ export function tzTime(tz: string) {
   } catch {
     return "—";
   }
+}
+
+/** Hook-version of tzTime that updates each minute. SSR-safe (returns "—" until hydrated). */
+import { useEffect, useState } from "react";
+export function useTzTime(tz: string) {
+  const [t, setT] = useState<string>("—");
+  useEffect(() => {
+    const update = () => setT(tzTime(tz));
+    update();
+    const id = setInterval(update, 30_000);
+    return () => clearInterval(id);
+  }, [tz]);
+  return t;
 }

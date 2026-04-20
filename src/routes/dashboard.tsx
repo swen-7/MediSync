@@ -1,7 +1,9 @@
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { AppShell } from "@/components/ping/AppShell";
-import { usePingStore, useT_hook, tzTime, initials } from "@/store/usePingStore";
+import { usePingStore, useT_hook, useTzTime, initials } from "@/store/usePingStore";
 import type { SupervisorRate, Status } from "@/store/usePingStore";
+import { useAuth } from "@/integrations/supabase/auth-provider";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -10,17 +12,16 @@ export const Route = createFileRoute("/dashboard")({
       { name: "description", content: "Caregiver dashboard: monitor your loved ones' medication adherence in real time." },
     ],
   }),
-  beforeLoad: () => {
-    if (typeof window !== "undefined" && !usePingStore.getState().user) {
-      throw redirect({ to: "/" });
-    }
-  },
   component: Dashboard,
 });
 
 function Dashboard() {
   const t = useT_hook();
   const navigate = useNavigate();
+  const { session, loading } = useAuth();
+  useEffect(() => {
+    if (!loading && !session) navigate({ to: "/login" });
+  }, [loading, session, navigate]);
   const { elders, alerts, hist7, supervisorRates, confirmElder, missedElder } = usePingStore();
   const hasAlert = alerts.some((a) => !a.resolved);
   const lowStock = elders.flatMap((e) =>
@@ -76,9 +77,7 @@ function Dashboard() {
                     : e.status === "missed"
                     ? t("missed_today")
                     : t("awaiting")}
-                  <span className="bg-teal-l text-teal px-2 py-0.5 rounded-full text-[0.75rem] font-bold ml-1">
-                    🕐 {tzTime(e.timezone)}
-                  </span>
+                  <ElderClock tz={e.timezone} />
                 </div>
               </div>
               <Tag status={e.status} />
@@ -165,6 +164,15 @@ function SectionHeader({
         </button>
       )}
     </div>
+  );
+}
+
+function ElderClock({ tz }: { tz: string }) {
+  const t = useTzTime(tz);
+  return (
+    <span className="bg-teal-l text-teal px-2 py-0.5 rounded-full text-[0.75rem] font-bold ml-1">
+      🕐 {t}
+    </span>
   );
 }
 
