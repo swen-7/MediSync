@@ -227,6 +227,16 @@ function Page() {
           }}
         />
       )}
+
+      {dueMed && (
+        <DueTakeover
+          med={dueMed.med}
+          state={dueMed.info.state}
+          dueAt={dueMed.info.dueAt}
+          minutesDelta={dueMed.info.minutesDelta}
+          onResolved={() => setReload((r) => r + 1)}
+        />
+      )}
     </AppShell>
   );
 }
