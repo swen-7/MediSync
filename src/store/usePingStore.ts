@@ -44,6 +44,15 @@ export interface User {
   role: Role;
 }
 
+export interface VitalReading {
+  id: number;
+  systolic: number;
+  diastolic: number;
+  pulse?: number;
+  takenAt: string; // ISO
+  note?: string;
+}
+
 export interface SupervisorRate {
   name: string;
   rate: number;
@@ -90,6 +99,9 @@ interface PingState {
   calSelDate: string | null;
   calEvents: CalEvent[];
 
+  caregiverPhone: string; // E.164-ish, will be sanitized for wa.me
+  vitals: VitalReading[];
+
   toggleTheme: () => void;
   cycleLang: () => void;
   setLoginRole: (r: Role) => void;
@@ -106,6 +118,9 @@ interface PingState {
   setCalSelDate: (d: string | null) => void;
   addCalEvent: (e: Omit<CalEvent, "id">) => void;
   deleteCalEvent: (id: number) => void;
+
+  addVital: (v: Omit<VitalReading, "id">) => void;
+  deleteVital: (id: number) => void;
 }
 
 let undoTimer: ReturnType<typeof setTimeout> | null = null;
