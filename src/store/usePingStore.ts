@@ -234,6 +234,9 @@ export const usePingStore = create<PingState>((set, get) => ({
   setCalSelDate: (d) => set({ calSelDate: d }),
   addCalEvent: (e) => set({ calEvents: [...get().calEvents, { ...e, id: Date.now() }] }),
   deleteCalEvent: (id) => set({ calEvents: get().calEvents.filter((e) => e.id !== id) }),
+
+  addVital: (v) => set({ vitals: [{ ...v, id: Date.now() }, ...get().vitals] }),
+  deleteVital: (id) => set({ vitals: get().vitals.filter((v) => v.id !== id) }),
 }));
 
 import { LANGS } from "@/lib/translations";
