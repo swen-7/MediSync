@@ -173,6 +173,13 @@ export const usePingStore = create<PingState>((set, get) => ({
     { id: 4, date: "2026-04-26", title: "Amlodipine 5mg — Refill reminder", type: "med_schedule", elder: "Grandma Rose", color: "#2a9d6e" },
   ],
 
+  caregiverPhone: "+60 11-2345 6789",
+  vitals: [
+    { id: 1, systolic: 128, diastolic: 82, pulse: 72, takenAt: "2026-04-19T08:15:00", note: "Before breakfast" },
+    { id: 2, systolic: 134, diastolic: 86, pulse: 76, takenAt: "2026-04-18T08:05:00" },
+    { id: 3, systolic: 122, diastolic: 78, pulse: 70, takenAt: "2026-04-17T08:20:00" },
+  ],
+
   toggleTheme: () => {
     const next = get().theme === "light" ? "dark" : "light";
     if (typeof document !== "undefined") {
