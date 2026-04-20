@@ -162,12 +162,6 @@ function Page() {
             );
           })
         )}
-        {false && meds.map((m) => (
-          <div
-            key={(m as any).id}
-            className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
-          />
-        ))}
 
         {/* Vitals */}
         <div className="flex items-center justify-between mt-5 mb-2.5">
