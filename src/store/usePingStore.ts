@@ -149,6 +149,15 @@ export const usePingStore = create<PingState>((set, get) => ({
   ],
   undoToast: null,
 
+  calViewDate: new Date(),
+  calSelDate: null,
+  calEvents: [
+    { id: 1, date: "2026-04-22", title: "Grandma Rose — Cardiologist", type: "doc", elder: "Grandma Rose", color: "#1890a0" },
+    { id: 2, date: "2026-04-28", title: "Amlodipine 5mg expires", type: "medexp", elder: "Grandma Rose", color: "#e05555" },
+    { id: 3, date: "2026-05-05", title: "Uncle David — Cardiology follow-up", type: "doc", elder: "Uncle David", color: "#1890a0" },
+    { id: 4, date: "2026-04-26", title: "Amlodipine 5mg — Refill reminder", type: "med_schedule", elder: "Grandma Rose", color: "#2a9d6e" },
+  ],
+
   toggleTheme: () => {
     const next = get().theme === "light" ? "dark" : "light";
     if (typeof document !== "undefined") {
