@@ -68,22 +68,55 @@ function Page() {
   const { profile } = useAuth();
   const [meds, setMeds] = useState<MyMed[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loggedToday, setLoggedToday] = useState<Set<string>>(new Set());
+  const [now, setNow] = useState<Date>(() => new Date());
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     const load = async () => {
       if (!profile?.id) return;
-      const { data, error } = await supabase
-        .from("medications")
-        .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
-        .eq("patient_id", profile.id)
-        .eq("active", true)
-        .order("scheduled_time");
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const [{ data: medsData, error }, { data: logsData }] = await Promise.all([
+        supabase
+          .from("medications")
+          .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
+          .eq("patient_id", profile.id)
+          .eq("active", true)
+          .order("scheduled_time"),
+        supabase
+          .from("medication_logs")
+          .select("medication_id, due_at")
+          .eq("patient_id", profile.id)
+          .gte("due_at", startOfDay.toISOString()),
+      ]);
       if (error) toast.error(error.message);
-      setMeds((data ?? []) as MyMed[]);
+      setMeds((medsData ?? []) as MyMed[]);
+      setLoggedToday(new Set((logsData ?? []).map((l) => l.medication_id)));
       setLoading(false);
     };
     load();
-  }, [profile?.id]);
+  }, [profile?.id, reload]);
+
+  // tick every 30s so due-state updates without refresh
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // pick earliest med in approaching/due/overdue not yet logged today
+  const dueMed = (() => {
+    let best: { med: MyMed; info: ReturnType<typeof computeWindow> } | null = null;
+    for (const m of meds) {
+      if (loggedToday.has(m.id)) continue;
+      const info = computeWindow(now, m.scheduled_time);
+      if (info.state === "idle") continue;
+      if (!best || parseScheduled(m.scheduled_time, now) < parseScheduled(best.med.scheduled_time, now)) {
+        best = { med: m, info };
+      }
+    }
+    return best;
+  })();
 
   const waNumber = sanitizeForWhatsApp(caregiverPhone);
   const waUrl = `https://wa.me/${waNumber}`;
