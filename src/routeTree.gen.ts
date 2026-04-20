@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MyMedsRouteImport } from './routes/my-meds'
+import { Route as MedicationsRouteImport } from './routes/medications'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LinkRouteImport } from './routes/link'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -22,6 +23,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const MyMedsRoute = MyMedsRouteImport.update({
   id: '/my-meds',
   path: '/my-meds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MedicationsRoute = MedicationsRouteImport.update({
+  id: '/medications',
+  path: '/medications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/link': typeof LinkRoute
   '/login': typeof LoginRoute
+  '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/link': typeof LinkRoute
   '/login': typeof LoginRoute
+  '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/link': typeof LinkRoute
   '/login': typeof LoginRoute
+  '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/link'
     | '/login'
+    | '/medications'
     | '/my-meds'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/link'
     | '/login'
+    | '/medications'
     | '/my-meds'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/link'
     | '/login'
+    | '/medications'
     | '/my-meds'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   LinkRoute: typeof LinkRoute
   LoginRoute: typeof LoginRoute
+  MedicationsRoute: typeof MedicationsRoute
   MyMedsRoute: typeof MyMedsRoute
 }
 
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/my-meds'
       fullPath: '/my-meds'
       preLoaderRoute: typeof MyMedsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/medications': {
+      id: '/medications'
+      path: '/medications'
+      fullPath: '/medications'
+      preLoaderRoute: typeof MedicationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   LinkRoute: LinkRoute,
   LoginRoute: LoginRoute,
+  MedicationsRoute: MedicationsRoute,
   MyMedsRoute: MyMedsRoute,
 }
 export const routeTree = rootRouteImport
