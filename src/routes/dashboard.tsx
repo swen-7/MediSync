@@ -138,6 +138,13 @@ function Dashboard() {
         {supervisorRates.slice(0, 2).map((r) => (
           <RateCard key={r.name} r={r} />
         ))}
+
+        <a
+          href="tel:999"
+          className="block w-full text-center bg-red text-white font-extrabold text-fs-base py-4 rounded-2xl shadow-[var(--shadow-ping)] mt-4 active:scale-[0.98] transition-transform"
+        >
+          {t("emergency_999")}
+        </a>
       </div>
     </AppShell>
   );

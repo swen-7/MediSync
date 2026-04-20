@@ -1,25 +1,268 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/ping/AppShell";
+import { usePingStore, useT_hook } from "@/store/usePingStore";
+import type { VitalReading } from "@/store/usePingStore";
 
 export const Route = createFileRoute("/my-meds")({
   head: () => ({
     meta: [
-      { title: "My-meds — Ping" },
+      { title: "My Meds — Ping" },
+      { name: "description", content: "Your medications, vitals, and emergency contacts." },
     ],
   }),
   component: Page,
 });
 
+/** Sanitize a phone number for wa.me — digits only, strip leading +/0/spaces/dashes. */
+function sanitizeForWhatsApp(raw: string): string {
+  const digits = (raw || "").replace(/\D+/g, "");
+  // wa.me wants country-code prefixed digits, no leading zero
+  return digits.replace(/^0+/, "");
+}
+
+function bpCategory(sys: number, dia: number): { label: string; cls: string } {
+  if (sys >= 140 || dia >= 90) return { label: "vitals_high", cls: "bg-red-l text-red" };
+  if (sys >= 130 || dia >= 80) return { label: "vitals_elevated", cls: "bg-amber-l text-amber" };
+  return { label: "vitals_normal", cls: "bg-green-l text-green" };
+}
+
+function fmtDateTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString("en-MY", {
+      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
+    });
+  } catch {
+    return iso;
+  }
+}
+
 function Page() {
+  const t = useT_hook();
+  const { caregiverPhone, vitals, addVital, deleteVital, elders } = usePingStore();
+  const meds = elders[0]?.medications ?? [];
+  const waNumber = sanitizeForWhatsApp(caregiverPhone);
+  const waUrl = `https://wa.me/${waNumber}`;
+  const [showVitals, setShowVitals] = useState(false);
+
   return (
-    <AppShell title="My-meds">
+    <AppShell title={t("my_meds")}>
       <div className="flex-1 px-4 pt-4 pb-24">
-        <div className="font-display text-fs-xl font-semibold mb-1">My-meds</div>
-        <div className="text-fs-sm text-muted-foreground mb-6">Coming in the next phase.</div>
-        <div className="bg-card rounded-2xl p-6 shadow-[var(--shadow-ping)] border border-border text-center text-muted-foreground text-fs-sm">
-          This screen will be built in the next phase of the conversion.
+        {/* Quick actions */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4">
+          <a
+            href="tel:999"
+            className="text-center bg-red text-white font-extrabold text-fs-sm py-4 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform"
+          >
+            {t("emergency_999")}
+          </a>
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-center bg-green text-white font-extrabold text-fs-sm py-4 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform"
+          >
+            {t("contact_caregiver")}
+          </a>
+        </div>
+
+        {/* Today's medications */}
+        <div className="font-extrabold text-fs-sm mb-2.5">{t("medications")}</div>
+        {meds.length === 0 && (
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">
+            No medications yet.
+          </div>
+        )}
+        {meds.map((m) => (
+          <div
+            key={m.id}
+            className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-extrabold text-fs-base">{m.name}</div>
+                <div className="text-fs-xs text-muted-foreground mt-0.5">
+                  {m.freq} · {m.time}
+                </div>
+              </div>
+              <span className="bg-teal-l text-teal px-2.5 py-1 rounded-full text-fs-xs font-bold">
+                {m.remainingQty} {m.unit}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* Vitals */}
+        <div className="flex items-center justify-between mt-5 mb-2.5">
+          <div className="font-extrabold text-fs-sm">{t("vitals_title")}</div>
+          <button
+            onClick={() => setShowVitals(true)}
+            className="text-green text-fs-xs font-bold bg-transparent border-none px-2 py-1 rounded-lg hover:bg-green-l"
+          >
+            {t("vitals_add")}
+          </button>
+        </div>
+
+        {vitals.length === 0 ? (
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm">
+            {t("vitals_empty")}
+          </div>
+        ) : (
+          vitals.map((v) => <VitalCard key={v.id} v={v} onDelete={() => deleteVital(v.id)} />)
+        )}
+      </div>
+
+      {showVitals && (
+        <AddVitalModal
+          onClose={() => setShowVitals(false)}
+          onSave={(v) => {
+            addVital(v);
+            setShowVitals(false);
+          }}
+        />
+      )}
+    </AppShell>
+  );
+}
+
+function VitalCard({ v, onDelete }: { v: VitalReading; onDelete: () => void }) {
+  const t = useT_hook();
+  const cat = bpCategory(v.systolic, v.diastolic);
+  return (
+    <div className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-fs-xl font-semibold">{v.systolic}</span>
+            <span className="text-muted-foreground font-bold">/</span>
+            <span className="font-display text-fs-xl font-semibold">{v.diastolic}</span>
+            <span className="text-fs-xs text-muted-foreground ml-1">{t("vitals_unit")}</span>
+          </div>
+          {v.pulse && (
+            <div className="text-fs-xs text-muted-foreground mt-0.5">
+              ❤️ {v.pulse} bpm
+            </div>
+          )}
+          <div className="text-fs-xs text-muted-foreground mt-1">{fmtDateTime(v.takenAt)}</div>
+          {v.note && <div className="text-fs-xs text-foreground mt-1 italic">"{v.note}"</div>}
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <span className={`px-2.5 py-1 rounded-full text-fs-xs font-bold ${cat.cls}`}>
+            {t(cat.label)}
+          </span>
+          <button
+            onClick={onDelete}
+            className="text-muted-foreground hover:text-red text-fs-xs font-bold"
+            aria-label="Delete reading"
+          >
+            ✕
+          </button>
         </div>
       </div>
-    </AppShell>
+    </div>
+  );
+}
+
+function AddVitalModal({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (v: Omit<VitalReading, "id">) => void;
+}) {
+  const t = useT_hook();
+  const [sys, setSys] = useState("");
+  const [dia, setDia] = useState("");
+  const [pulse, setPulse] = useState("");
+  const [note, setNote] = useState("");
+
+  const sysN = parseInt(sys, 10);
+  const diaN = parseInt(dia, 10);
+  const valid = sysN >= 60 && sysN <= 250 && diaN >= 30 && diaN <= 160;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 z-[400] flex items-end justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 shadow-[0_-4px_24px_rgba(0,0,0,0.2)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+        <div className="font-display text-fs-xl font-semibold mb-4">{t("vitals_title")}</div>
+
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <label className="block">
+            <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_systolic")}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={sys}
+              onChange={(e) => setSys(e.target.value)}
+              className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-fs-lg font-extrabold text-center"
+              placeholder="120"
+            />
+          </label>
+          <label className="block">
+            <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_diastolic")}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={dia}
+              onChange={(e) => setDia(e.target.value)}
+              className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-fs-lg font-extrabold text-center"
+              placeholder="80"
+            />
+          </label>
+        </div>
+
+        <label className="block mb-3">
+          <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_pulse")}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={pulse}
+            onChange={(e) => setPulse(e.target.value)}
+            className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5"
+            placeholder="72"
+          />
+        </label>
+
+        <label className="block mb-4">
+          <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_note")}</span>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5"
+            placeholder="Before breakfast"
+          />
+        </label>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-input-bg text-foreground font-bold py-3 rounded-xl"
+          >
+            {t("cancel")}
+          </button>
+          <button
+            disabled={!valid}
+            onClick={() =>
+              onSave({
+                systolic: sysN,
+                diastolic: diaN,
+                pulse: pulse ? parseInt(pulse, 10) : undefined,
+                takenAt: new Date().toISOString(),
+                note: note.trim() || undefined,
+              })
+            }
+            className="flex-1 bg-green text-white font-bold py-3 rounded-xl disabled:opacity-50"
+          >
+            {t("vitals_save")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

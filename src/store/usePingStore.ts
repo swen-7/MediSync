@@ -44,6 +44,15 @@ export interface User {
   role: Role;
 }
 
+export interface VitalReading {
+  id: number;
+  systolic: number;
+  diastolic: number;
+  pulse?: number;
+  takenAt: string; // ISO
+  note?: string;
+}
+
 export interface SupervisorRate {
   name: string;
   rate: number;
@@ -90,6 +99,9 @@ interface PingState {
   calSelDate: string | null;
   calEvents: CalEvent[];
 
+  caregiverPhone: string; // E.164-ish, will be sanitized for wa.me
+  vitals: VitalReading[];
+
   toggleTheme: () => void;
   cycleLang: () => void;
   setLoginRole: (r: Role) => void;
@@ -106,6 +118,9 @@ interface PingState {
   setCalSelDate: (d: string | null) => void;
   addCalEvent: (e: Omit<CalEvent, "id">) => void;
   deleteCalEvent: (id: number) => void;
+
+  addVital: (v: Omit<VitalReading, "id">) => void;
+  deleteVital: (id: number) => void;
 }
 
 let undoTimer: ReturnType<typeof setTimeout> | null = null;
@@ -156,6 +171,13 @@ export const usePingStore = create<PingState>((set, get) => ({
     { id: 2, date: "2026-04-28", title: "Amlodipine 5mg expires", type: "medexp", elder: "Grandma Rose", color: "#e05555" },
     { id: 3, date: "2026-05-05", title: "Uncle David — Cardiology follow-up", type: "doc", elder: "Uncle David", color: "#1890a0" },
     { id: 4, date: "2026-04-26", title: "Amlodipine 5mg — Refill reminder", type: "med_schedule", elder: "Grandma Rose", color: "#2a9d6e" },
+  ],
+
+  caregiverPhone: "+60 11-2345 6789",
+  vitals: [
+    { id: 1, systolic: 128, diastolic: 82, pulse: 72, takenAt: "2026-04-19T08:15:00", note: "Before breakfast" },
+    { id: 2, systolic: 134, diastolic: 86, pulse: 76, takenAt: "2026-04-18T08:05:00" },
+    { id: 3, systolic: 122, diastolic: 78, pulse: 70, takenAt: "2026-04-17T08:20:00" },
   ],
 
   toggleTheme: () => {
@@ -212,6 +234,9 @@ export const usePingStore = create<PingState>((set, get) => ({
   setCalSelDate: (d) => set({ calSelDate: d }),
   addCalEvent: (e) => set({ calEvents: [...get().calEvents, { ...e, id: Date.now() }] }),
   deleteCalEvent: (id) => set({ calEvents: get().calEvents.filter((e) => e.id !== id) }),
+
+  addVital: (v) => set({ vitals: [{ ...v, id: Date.now() }, ...get().vitals] }),
+  deleteVital: (id) => set({ vitals: get().vitals.filter((v) => v.id !== id) }),
 }));
 
 import { LANGS } from "@/lib/translations";
