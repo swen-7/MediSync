@@ -86,15 +86,15 @@ function BottomTabs() {
 
   const supTabs = [
     { to: "/dashboard", icon: "🏠", lbl: t("home_tab") },
-    { to: "/calendar", icon: "📅", lbl: t("calendar_tab") },
+    { to: "/medications", icon: "💊", lbl: t("meds_tab") },
     { to: "/alerts", icon: "🔔", lbl: t("alerts_tab") },
-    { to: "/history", icon: "📊", lbl: t("history_tab") },
+    { to: "/link", icon: "🔗", lbl: t("link_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
   ];
   const eldTabs = [
     { to: "/my-meds", icon: "💊", lbl: t("my_meds") },
-    { to: "/calendar", icon: "📅", lbl: t("calendar_tab") },
-    { to: "/history", icon: "📊", lbl: t("history_tab") },
+    { to: "/medications", icon: "📋", lbl: t("meds_tab") },
+    { to: "/link", icon: "🔗", lbl: t("link_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
   ];
   const tabs = profile.role === "patient" ? eldTabs : supTabs;
