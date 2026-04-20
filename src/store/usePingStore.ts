@@ -49,6 +49,26 @@ export interface SupervisorRate {
   rate: number;
 }
 
+export interface CalEvent {
+  id: number;
+  date: string; // YYYY-MM-DD
+  title: string;
+  type: "doc" | "medexp" | "med_schedule" | "other";
+  elder: string;
+  color: string;
+}
+
+export const EVENT_COLOURS = [
+  "#1890a0", "#2a9d6e", "#e05555", "#d98f20", "#7c3aed",
+  "#e57373", "#4caf50", "#2196f3", "#ff7043", "#8d6e63",
+];
+
+export const DAYS_SHORT = ["S", "M", "T", "W", "T", "F", "S"];
+export const MONS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 interface UndoState {
   msg: string;
   undo: () => void;
@@ -66,6 +86,10 @@ interface PingState {
   supervisorRates: SupervisorRate[];
   undoToast: UndoState | null;
 
+  calViewDate: Date;
+  calSelDate: string | null;
+  calEvents: CalEvent[];
+
   toggleTheme: () => void;
   cycleLang: () => void;
   setLoginRole: (r: Role) => void;
@@ -77,6 +101,11 @@ interface PingState {
   resolveAlert: (id: number) => void;
   showUndo: (msg: string, undo: () => void) => void;
   clearUndo: () => void;
+
+  setCalViewDate: (d: Date) => void;
+  setCalSelDate: (d: string | null) => void;
+  addCalEvent: (e: Omit<CalEvent, "id">) => void;
+  deleteCalEvent: (id: number) => void;
 }
 
 let undoTimer: ReturnType<typeof setTimeout> | null = null;
