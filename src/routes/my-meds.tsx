@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/ping/AppShell";
 import { usePingStore, useT_hook } from "@/store/usePingStore";
 import type { VitalReading } from "@/store/usePingStore";
+import { useAuth } from "@/integrations/supabase/auth-provider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/my-meds")({
   head: () => ({
@@ -37,13 +41,57 @@ function fmtDateTime(iso: string) {
   }
 }
 
+interface MyMed {
+  id: string;
+  med_name: string;
+  dosage: string;
+  frequency: string;
+  scheduled_time: string;
+  remaining_qty: number;
+  refill_reminder_days: number;
+  unit: string;
+}
+
+function freqDoses(f: string) {
+  if (f === "Twice daily") return 2;
+  if (f === "Three times daily") return 3;
+  if (f === "Four times daily") return 4;
+  if (f === "As needed") return 0;
+  return 1;
+}
+
 function Page() {
   const t = useT_hook();
-  const { caregiverPhone, vitals, addVital, deleteVital, elders } = usePingStore();
-  const meds = elders[0]?.medications ?? [];
+  const { caregiverPhone, vitals, addVital, deleteVital } = usePingStore();
+  const { profile } = useAuth();
+  const [meds, setMeds] = useState<MyMed[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!profile?.id) return;
+      const { data, error } = await supabase
+        .from("medications")
+        .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
+        .eq("patient_id", profile.id)
+        .eq("active", true)
+        .order("scheduled_time");
+      if (error) toast.error(error.message);
+      setMeds((data ?? []) as MyMed[]);
+      setLoading(false);
+    };
+    load();
+  }, [profile?.id]);
+
   const waNumber = sanitizeForWhatsApp(caregiverPhone);
   const waUrl = `https://wa.me/${waNumber}`;
   const [showVitals, setShowVitals] = useState(false);
+
+  const lowStock = meds.filter((m) => {
+    const d = freqDoses(m.frequency);
+    if (d <= 0) return false;
+    return Math.floor(m.remaining_qty / d) <= m.refill_reminder_days;
+  });
 
   return (
     <AppShell title={t("my_meds")}>
@@ -68,29 +116,52 @@ function Page() {
 
         {/* Today's medications */}
         <div className="font-extrabold text-fs-sm mb-2.5">{t("medications")}</div>
-        {meds.length === 0 && (
-          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">
-            No medications yet.
+        {lowStock.length > 0 && (
+          <div className="bg-amber-l border border-amber rounded-xl p-3 mb-2.5 text-fs-xs font-bold text-amber">
+            ⚠ Refill needed: {lowStock.map((m) => m.med_name).join(", ")}
           </div>
         )}
-        {meds.map((m) => (
-          <div
-            key={m.id}
-            className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-extrabold text-fs-base">{m.name}</div>
-                <div className="text-fs-xs text-muted-foreground mt-0.5">
-                  {m.freq} · {m.time}
+        {loading ? (
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">
+            Loading…
+          </div>
+        ) : meds.length === 0 ? (
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">
+            No medications yet.{" "}
+            <Link to="/medications" className="text-green font-bold underline">
+              Add one
+            </Link>
+            .
+          </div>
+        ) : (
+          meds.map((m) => {
+            const d = freqDoses(m.frequency);
+            const daysLeft = d > 0 ? Math.floor(m.remaining_qty / d) : null;
+            const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
+            return (
+              <div
+                key={m.id}
+                className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
+                    <div className="text-fs-xs text-muted-foreground mt-0.5">
+                      {m.frequency} · {m.scheduled_time.slice(0, 5)}
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${
+                      low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"
+                    }`}
+                  >
+                    {m.remaining_qty} {m.unit}
+                  </span>
                 </div>
               </div>
-              <span className="bg-teal-l text-teal px-2.5 py-1 rounded-full text-fs-xs font-bold">
-                {m.remainingQty} {m.unit}
-              </span>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
 
         {/* Vitals */}
         <div className="flex items-center justify-between mt-5 mb-2.5">

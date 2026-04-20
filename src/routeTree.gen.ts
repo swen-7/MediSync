@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MyMedsRouteImport } from './routes/my-meds'
+import { Route as MedicationsRouteImport } from './routes/medications'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LinkRouteImport } from './routes/link'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ClinicsRouteImport } from './routes/clinics'
@@ -23,9 +25,19 @@ const MyMedsRoute = MyMedsRouteImport.update({
   path: '/my-meds',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MedicationsRoute = MedicationsRouteImport.update({
+  id: '/medications',
+  path: '/medications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LinkRoute = LinkRouteImport.update({
+  id: '/link',
+  path: '/link',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -66,7 +78,9 @@ export interface FileRoutesByFullPath {
   '/clinics': typeof ClinicsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/link': typeof LinkRoute
   '/login': typeof LoginRoute
+  '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
 }
 export interface FileRoutesByTo {
@@ -76,7 +90,9 @@ export interface FileRoutesByTo {
   '/clinics': typeof ClinicsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/link': typeof LinkRoute
   '/login': typeof LoginRoute
+  '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
 }
 export interface FileRoutesById {
@@ -87,7 +103,9 @@ export interface FileRoutesById {
   '/clinics': typeof ClinicsRoute
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/link': typeof LinkRoute
   '/login': typeof LoginRoute
+  '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
 }
 export interface FileRouteTypes {
@@ -99,7 +117,9 @@ export interface FileRouteTypes {
     | '/clinics'
     | '/dashboard'
     | '/history'
+    | '/link'
     | '/login'
+    | '/medications'
     | '/my-meds'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -109,7 +129,9 @@ export interface FileRouteTypes {
     | '/clinics'
     | '/dashboard'
     | '/history'
+    | '/link'
     | '/login'
+    | '/medications'
     | '/my-meds'
   id:
     | '__root__'
@@ -119,7 +141,9 @@ export interface FileRouteTypes {
     | '/clinics'
     | '/dashboard'
     | '/history'
+    | '/link'
     | '/login'
+    | '/medications'
     | '/my-meds'
   fileRoutesById: FileRoutesById
 }
@@ -130,7 +154,9 @@ export interface RootRouteChildren {
   ClinicsRoute: typeof ClinicsRoute
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
+  LinkRoute: typeof LinkRoute
   LoginRoute: typeof LoginRoute
+  MedicationsRoute: typeof MedicationsRoute
   MyMedsRoute: typeof MyMedsRoute
 }
 
@@ -143,11 +169,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyMedsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/medications': {
+      id: '/medications'
+      path: '/medications'
+      fullPath: '/medications'
+      preLoaderRoute: typeof MedicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/link': {
+      id: '/link'
+      path: '/link'
+      fullPath: '/link'
+      preLoaderRoute: typeof LinkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -202,7 +242,9 @@ const rootRouteChildren: RootRouteChildren = {
   ClinicsRoute: ClinicsRoute,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
+  LinkRoute: LinkRoute,
   LoginRoute: LoginRoute,
+  MedicationsRoute: MedicationsRoute,
   MyMedsRoute: MyMedsRoute,
 }
 export const routeTree = rootRouteImport

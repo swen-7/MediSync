@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/ping/AppShell";
-import { usePingStore, useT_hook, useTzTime, initials } from "@/store/usePingStore";
-import type { SupervisorRate, Status } from "@/store/usePingStore";
+import { useT_hook } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
+import { supabase } from "@/integrations/supabase/client";
+import { usePatients } from "@/lib/patientContext";
+import { PatientSwitcher } from "@/components/ping/PatientSwitcher";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -19,124 +21,100 @@ function Dashboard() {
   const t = useT_hook();
   const navigate = useNavigate();
   const { session, loading } = useAuth();
+  const { selected } = usePatients();
+  const patientId = selected?.id ?? null;
+
+  const [meds, setMeds] = useState<MedRow[]>([]);
+  const [medsLoading, setMedsLoading] = useState(false);
+
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/login" });
   }, [loading, session, navigate]);
-  const { elders, alerts, hist7, supervisorRates, confirmElder, missedElder } = usePingStore();
-  const hasAlert = alerts.some((a) => !a.resolved);
-  const lowStock = elders.flatMap((e) =>
-    e.medications.filter((m) => {
-      const dl = Math.round(m.remainingQty / (m.freq === "Twice daily" ? 2 : m.freq === "Three times daily" ? 3 : 1));
-      return dl <= m.refillAlertDays;
-    }),
-  );
+
+  useEffect(() => {
+    if (!patientId) {
+      setMeds([]);
+      return;
+    }
+    setMedsLoading(true);
+    supabase
+      .from("medications")
+      .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
+      .eq("patient_id", patientId)
+      .eq("active", true)
+      .order("scheduled_time")
+      .then(({ data }) => {
+        setMeds((data ?? []) as MedRow[]);
+        setMedsLoading(false);
+      });
+  }, [patientId]);
+
+  const lowStock = meds.filter((m) => {
+    const d = freqDoses(m.frequency);
+    if (d <= 0) return false;
+    return Math.floor(m.remaining_qty / d) <= m.refill_reminder_days;
+  });
 
   return (
     <AppShell title="Ping.">
       <div className="flex-1 px-4 pt-3.5 pb-24">
-        {hasAlert && (
-          <div
-            onClick={() => navigate({ to: "/alerts" })}
-            className="bg-red-l border border-red rounded-xl p-3.5 mb-3.5 flex items-center gap-3 cursor-pointer"
-          >
-            <div className="text-lg">⚠️</div>
-            <div className="text-fs-xs font-bold text-red leading-snug">
-              Uncle David hasn't confirmed — Tap to view
-            </div>
-          </div>
-        )}
+        <PatientSwitcher />
+
         {lowStock.length > 0 && (
           <div className="bg-amber-l border border-amber rounded-xl p-3.5 mb-3.5 flex items-center gap-3">
             <div className="text-lg">💊</div>
             <div className="text-fs-xs font-bold text-amber leading-snug">
-              {t("refill_warning")} {lowStock.map((m) => m.name).join(", ")}
+              {t("refill_warning")} {lowStock.map((m) => m.med_name).join(", ")}
             </div>
           </div>
         )}
 
-        <SectionHeader title={t("your_loved_ones")} action={t("add")} onAction={() => {}} />
-        {elders.map((e) => (
-          <Link
-            key={e.id}
-            to="/dashboard"
-            className="block bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-3 hover:-translate-y-0.5 transition-transform"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <div className="font-extrabold text-fs-base">
-                  {e.name}, {e.age}
-                </div>
-                <div className="flex items-center gap-1.5 mt-1 text-fs-xs text-muted-foreground">
+        <SectionHeader
+          title={t("medications")}
+          action="Manage"
+          onAction={() => navigate({ to: "/medications" })}
+        />
+        {!patientId ? null : medsLoading ? (
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-3">
+            Loading…
+          </div>
+        ) : meds.length === 0 ? (
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-3">
+            No medications yet.{" "}
+            <Link to="/medications" className="text-green font-bold underline">
+              Add one
+            </Link>
+            .
+          </div>
+        ) : (
+          meds.map((m) => {
+            const d = freqDoses(m.frequency);
+            const daysLeft = d > 0 ? Math.floor(m.remaining_qty / d) : null;
+            const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
+            return (
+              <div
+                key={m.id}
+                className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
+                    <div className="text-fs-xs text-muted-foreground mt-0.5">
+                      {m.dosage} · {m.frequency} · {m.scheduled_time.slice(0, 5)}
+                    </div>
+                  </div>
                   <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      e.status === "confirmed" ? "bg-green" : e.status === "missed" ? "bg-red" : "bg-amber"
+                    className={`px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${
+                      low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"
                     }`}
-                  />
-                  {e.status === "confirmed"
-                    ? t("confirmed_today")
-                    : e.status === "missed"
-                    ? t("missed_today")
-                    : t("awaiting")}
-                  <ElderClock tz={e.timezone} />
+                  >
+                    {m.remaining_qty} {m.unit}
+                  </span>
                 </div>
               </div>
-              <Tag status={e.status} />
-            </div>
-            <div className="flex gap-1 mt-2">
-              {hist7.map((h, i) => (
-                <div
-                  key={i}
-                  className={`w-7 h-[22px] rounded-md flex items-center justify-center text-[0.72rem] font-extrabold ${
-                    h === "confirmed"
-                      ? "bg-green-l text-green"
-                      : h === "missed"
-                      ? "bg-red-l text-red"
-                      : "bg-input-bg text-hint"
-                  }`}
-                >
-                  {h === "confirmed" ? "✓" : h === "missed" ? "✗" : "·"}
-                </div>
-              ))}
-            </div>
-          </Link>
-        ))}
-
-        <SectionHeader title={t("today_log")} className="mt-3.5" />
-        <div className="bg-card rounded-2xl p-5 shadow-[var(--shadow-ping)] border border-border mb-3.5">
-          <div className="flex justify-between items-center py-1 border-b border-border mb-2.5">
-            <div>
-              <div className="font-bold">Grandma Rose</div>
-              <div className="text-muted-foreground text-fs-sm">Amlodipine 5mg · 8:00 MYT</div>
-            </div>
-            <Tag status="confirmed" />
-          </div>
-          <div className="flex justify-between items-center mb-2.5">
-            <div>
-              <div className="font-bold">Uncle David</div>
-              <div className="text-muted-foreground text-fs-sm">Atenolol 50mg · 9:00 MYT</div>
-            </div>
-            <Tag status="pending" />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => confirmElder(2)}
-              className="flex-1 bg-green-l text-green border-none py-2.5 rounded-xl font-bold text-fs-xs hover:bg-green-l/80 transition-colors"
-            >
-              {t("confirmed_taken")}
-            </button>
-            <button
-              onClick={() => missedElder(2)}
-              className="flex-1 bg-red-l text-red border-none py-2.5 rounded-xl font-bold text-fs-xs hover:bg-red-l/80 transition-colors"
-            >
-              {t("could_not_reach")}
-            </button>
-          </div>
-        </div>
-
-        <SectionHeader title={t("checkin_rate")} action="View all" onAction={() => {}} />
-        {supervisorRates.slice(0, 2).map((r) => (
-          <RateCard key={r.name} r={r} />
-        ))}
+            );
+          })
+        )}
 
         <a
           href="tel:999"
@@ -147,6 +125,25 @@ function Dashboard() {
       </div>
     </AppShell>
   );
+}
+
+interface MedRow {
+  id: string;
+  med_name: string;
+  dosage: string;
+  frequency: string;
+  scheduled_time: string;
+  remaining_qty: number;
+  refill_reminder_days: number;
+  unit: string;
+}
+
+function freqDoses(f: string) {
+  if (f === "Twice daily") return 2;
+  if (f === "Three times daily") return 3;
+  if (f === "Four times daily") return 4;
+  if (f === "As needed") return 0;
+  return 1;
 }
 
 function SectionHeader({
@@ -163,48 +160,6 @@ function SectionHeader({
           {action}
         </button>
       )}
-    </div>
-  );
-}
-
-function ElderClock({ tz }: { tz: string }) {
-  const t = useTzTime(tz);
-  return (
-    <span className="bg-teal-l text-teal px-2 py-0.5 rounded-full text-[0.75rem] font-bold ml-1">
-      🕐 {t}
-    </span>
-  );
-}
-
-function Tag({ status }: { status: Status }) {
-  const t = useT_hook();
-  const cls =
-    status === "confirmed"
-      ? "bg-green-l text-green"
-      : status === "missed"
-      ? "bg-red-l text-red"
-      : "bg-amber-l text-amber";
-  const label = status === "confirmed" ? t("done") : status === "missed" ? t("missed") : t("pending");
-  return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${cls}`}>{label}</span>;
-}
-
-function RateCard({ r }: { r: SupervisorRate }) {
-  const cls = r.rate < 50 ? "bg-red" : r.rate < 70 ? "bg-amber" : "bg-green";
-  const textCls = r.rate < 50 ? "text-red" : r.rate < 70 ? "text-amber" : "text-green";
-  return (
-    <div className="bg-card rounded-xl px-4 py-3.5 shadow-[var(--shadow-ping)] border border-border mb-2.5 flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full bg-green-l flex items-center justify-center font-extrabold text-green text-[0.68rem] shrink-0">
-        {initials(r.name)}
-      </div>
-      <div className="flex-1">
-        <div className="font-bold text-fs-sm mb-1">{r.name}</div>
-        <div className="flex items-center gap-2.5">
-          <div className="bg-input-bg rounded-md h-2.5 flex-1 overflow-hidden">
-            <div className={`h-full rounded-md ${cls} transition-[width] duration-500`} style={{ width: `${r.rate}%` }} />
-          </div>
-          <span className={`text-fs-xs font-extrabold ${textCls} whitespace-nowrap`}>{r.rate}%</span>
-        </div>
-      </div>
     </div>
   );
 }
