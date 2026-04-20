@@ -267,3 +267,16 @@ export function tzTime(tz: string) {
     return "—";
   }
 }
+
+/** Hook-version of tzTime that updates each minute. SSR-safe (returns "—" until hydrated). */
+import { useEffect, useState } from "react";
+export function useTzTime(tz: string) {
+  const [t, setT] = useState<string>("—");
+  useEffect(() => {
+    const update = () => setT(tzTime(tz));
+    update();
+    const id = setInterval(update, 30_000);
+    return () => clearInterval(id);
+  }, [tz]);
+  return t;
+}

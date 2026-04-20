@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/ping/AppShell";
-import { usePingStore, useT_hook, tzTime, initials } from "@/store/usePingStore";
+import { usePingStore, useT_hook, useTzTime, initials } from "@/store/usePingStore";
 import type { SupervisorRate, Status } from "@/store/usePingStore";
 
 export const Route = createFileRoute("/dashboard")({
@@ -76,9 +76,7 @@ function Dashboard() {
                     : e.status === "missed"
                     ? t("missed_today")
                     : t("awaiting")}
-                  <span className="bg-teal-l text-teal px-2 py-0.5 rounded-full text-[0.75rem] font-bold ml-1">
-                    🕐 {tzTime(e.timezone)}
-                  </span>
+                  <ElderClock tz={e.timezone} />
                 </div>
               </div>
               <Tag status={e.status} />
@@ -165,6 +163,15 @@ function SectionHeader({
         </button>
       )}
     </div>
+  );
+}
+
+function ElderClock({ tz }: { tz: string }) {
+  const t = useTzTime(tz);
+  return (
+    <span className="bg-teal-l text-teal px-2 py-0.5 rounded-full text-[0.75rem] font-bold ml-1">
+      🕐 {t}
+    </span>
   );
 }
 
