@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/ping/AppShell";
-import { usePingStore, useT_hook } from "@/store/usePingStore";
-import type { VitalReading } from "@/store/usePingStore";
+import { useT_hook } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { computeWindow, parseScheduled } from "@/lib/dueLogic";
 import { DueTakeover } from "@/components/ping/DueTakeover";
+
+interface DbVital {
+  id: string;
+  blood_pressure_sys: number;
+  blood_pressure_dia: number;
+  pulse: number | null;
+  taken_at: string;
+  note: string | null;
+}
 
 export const Route = createFileRoute("/my-meds")({
   head: () => ({
@@ -64,20 +72,21 @@ function freqDoses(f: string) {
 
 function Page() {
   const t = useT_hook();
-  const { caregiverPhone, vitals, addVital, deleteVital } = usePingStore();
   const { profile } = useAuth();
   const [meds, setMeds] = useState<MyMed[]>([]);
   const [loading, setLoading] = useState(true);
   const [loggedToday, setLoggedToday] = useState<Set<string>>(new Set());
   const [now, setNow] = useState<Date>(() => new Date());
   const [reload, setReload] = useState(0);
+  const [caregiverPhone, setCaregiverPhone] = useState<string>("");
+  const [vitals, setVitals] = useState<DbVital[]>([]);
 
   useEffect(() => {
     const load = async () => {
       if (!profile?.id) return;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
-      const [{ data: medsData, error }, { data: logsData }] = await Promise.all([
+      const [{ data: medsData, error }, { data: logsData }, { data: vitalsData }, { data: settings }] = await Promise.all([
         supabase
           .from("medications")
           .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
@@ -89,10 +98,23 @@ function Page() {
           .select("medication_id, due_at")
           .eq("patient_id", profile.id)
           .gte("due_at", startOfDay.toISOString()),
+        supabase
+          .from("vitals")
+          .select("id, blood_pressure_sys, blood_pressure_dia, pulse, taken_at, note")
+          .eq("patient_id", profile.id)
+          .order("taken_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("patient_settings")
+          .select("caregiver_phone")
+          .eq("patient_id", profile.id)
+          .maybeSingle(),
       ]);
       if (error) toast.error(error.message);
       setMeds((medsData ?? []) as MyMed[]);
       setLoggedToday(new Set((logsData ?? []).map((l) => l.medication_id)));
+      setVitals((vitalsData ?? []) as DbVital[]);
+      setCaregiverPhone(settings?.caregiver_phone ?? "");
       setLoading(false);
     };
     load();
@@ -214,16 +236,41 @@ function Page() {
             {t("vitals_empty")}
           </div>
         ) : (
-          vitals.map((v) => <VitalCard key={v.id} v={v} onDelete={() => deleteVital(v.id)} />)
+          vitals.map((v) => (
+            <VitalCard
+              key={v.id}
+              v={v}
+              onDelete={async () => {
+                const { error } = await supabase.from("vitals").delete().eq("id", v.id);
+                if (error) return toast.error(error.message);
+                setVitals((prev) => prev.filter((x) => x.id !== v.id));
+              }}
+            />
+          ))
         )}
       </div>
 
       {showVitals && (
         <AddVitalModal
           onClose={() => setShowVitals(false)}
-          onSave={(v) => {
-            addVital(v);
+          onSave={async (v) => {
+            if (!profile?.id) return;
+            const { data, error } = await supabase
+              .from("vitals")
+              .insert({
+                patient_id: profile.id,
+                blood_pressure_sys: v.systolic,
+                blood_pressure_dia: v.diastolic,
+                pulse: v.pulse ?? null,
+                note: v.note ?? null,
+                taken_at: v.takenAt,
+              })
+              .select("id, blood_pressure_sys, blood_pressure_dia, pulse, taken_at, note")
+              .single();
+            if (error) return toast.error(error.message);
+            if (data) setVitals((prev) => [data as DbVital, ...prev]);
             setShowVitals(false);
+            toast.success("Reading saved");
           }}
         />
       )}
@@ -241,17 +288,17 @@ function Page() {
   );
 }
 
-function VitalCard({ v, onDelete }: { v: VitalReading; onDelete: () => void }) {
+function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
   const t = useT_hook();
-  const cat = bpCategory(v.systolic, v.diastolic);
+  const cat = bpCategory(v.blood_pressure_sys, v.blood_pressure_dia);
   return (
     <div className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="flex items-baseline gap-1">
-            <span className="font-display text-fs-xl font-semibold">{v.systolic}</span>
+            <span className="font-display text-fs-xl font-semibold">{v.blood_pressure_sys}</span>
             <span className="text-muted-foreground font-bold">/</span>
-            <span className="font-display text-fs-xl font-semibold">{v.diastolic}</span>
+            <span className="font-display text-fs-xl font-semibold">{v.blood_pressure_dia}</span>
             <span className="text-fs-xs text-muted-foreground ml-1">{t("vitals_unit")}</span>
           </div>
           {v.pulse && (
@@ -259,7 +306,7 @@ function VitalCard({ v, onDelete }: { v: VitalReading; onDelete: () => void }) {
               ❤️ {v.pulse} bpm
             </div>
           )}
-          <div className="text-fs-xs text-muted-foreground mt-1">{fmtDateTime(v.takenAt)}</div>
+          <div className="text-fs-xs text-muted-foreground mt-1">{fmtDateTime(v.taken_at)}</div>
           {v.note && <div className="text-fs-xs text-foreground mt-1 italic">"{v.note}"</div>}
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -284,7 +331,7 @@ function AddVitalModal({
   onSave,
 }: {
   onClose: () => void;
-  onSave: (v: Omit<VitalReading, "id">) => void;
+  onSave: (v: { systolic: number; diastolic: number; pulse?: number; takenAt: string; note?: string }) => void;
 }) {
   const t = useT_hook();
   const [sys, setSys] = useState("");
