@@ -47,6 +47,10 @@ export const Route = createRootRoute({
         href: appCss,
       },
       {
+        rel: "manifest",
+        href: "/manifest.webmanifest",
+      },
+      {
         rel: "preconnect",
         href: "https://fonts.googleapis.com",
       },

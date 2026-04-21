@@ -5,15 +5,18 @@ import { useT_hook } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { computeWindow, parseScheduled } from "@/lib/dueLogic";
 import { DueTakeover } from "@/components/ping/DueTakeover";
+import { useRoleGuard } from "@/lib/roleGuard";
+import { evaluateStreak } from "@/lib/streak";
 
 interface DbVital {
   id: string;
-  blood_pressure_sys: number;
-  blood_pressure_dia: number;
+  blood_pressure_sys: number | null;
+  blood_pressure_dia: number | null;
   pulse: number | null;
+  blood_glucose: number | null;
   taken_at: string;
   note: string | null;
 }
@@ -28,17 +31,23 @@ export const Route = createFileRoute("/my-meds")({
   component: Page,
 });
 
-/** Sanitize a phone number for wa.me — digits only, strip leading +/0/spaces/dashes. */
 function sanitizeForWhatsApp(raw: string): string {
   const digits = (raw || "").replace(/\D+/g, "");
-  // wa.me wants country-code prefixed digits, no leading zero
   return digits.replace(/^0+/, "");
 }
 
-function bpCategory(sys: number, dia: number): { label: string; cls: string } {
-  if (sys >= 140 || dia >= 90) return { label: "vitals_high", cls: "bg-red-l text-red" };
-  if (sys >= 130 || dia >= 80) return { label: "vitals_elevated", cls: "bg-amber-l text-amber" };
-  return { label: "vitals_normal", cls: "bg-green-l text-green" };
+function bpCategory(sys: number | null, dia: number | null): { key: string; cls: string } | null {
+  if (sys == null || dia == null) return null;
+  if (sys >= 140 || dia >= 90) return { key: "vitals_high", cls: "bg-red-l text-red" };
+  if (sys >= 130 || dia >= 80) return { key: "vitals_elevated", cls: "bg-amber-l text-amber" };
+  return { key: "vitals_normal", cls: "bg-green-l text-green" };
+}
+
+function glucoseCategory(g: number | null): { key: string; cls: string } | null {
+  if (g == null) return null;
+  if (g >= 7.0) return { key: "vitals_diabetes", cls: "bg-red-l text-red" };
+  if (g >= 5.6) return { key: "vitals_prediabetes", cls: "bg-amber-l text-amber" };
+  return { key: "vitals_normal", cls: "bg-green-l text-green" };
 }
 
 function fmtDateTime(iso: string) {
@@ -46,9 +55,7 @@ function fmtDateTime(iso: string) {
     return new Date(iso).toLocaleString("en-MY", {
       day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
     });
-  } catch {
-    return iso;
-  }
+  } catch { return iso; }
 }
 
 interface MyMed {
@@ -72,6 +79,8 @@ function freqDoses(f: string) {
 
 function Page() {
   const t = useT_hook();
+  const location = useLocation();
+  useRoleGuard(location.pathname);
   const { profile } = useAuth();
   const [meds, setMeds] = useState<MyMed[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +89,8 @@ function Page() {
   const [reload, setReload] = useState(0);
   const [caregiverPhone, setCaregiverPhone] = useState<string>("");
   const [vitals, setVitals] = useState<DbVital[]>([]);
+  const [streak, setStreak] = useState(0);
+  const [streakDoneToday, setStreakDoneToday] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -90,25 +101,19 @@ function Page() {
         supabase
           .from("medications")
           .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
-          .eq("patient_id", profile.id)
-          .eq("active", true)
-          .order("scheduled_time"),
+          .eq("patient_id", profile.id).eq("active", true).order("scheduled_time"),
         supabase
           .from("medication_logs")
           .select("medication_id, due_at")
-          .eq("patient_id", profile.id)
-          .gte("due_at", startOfDay.toISOString()),
+          .eq("patient_id", profile.id).gte("due_at", startOfDay.toISOString()),
         supabase
           .from("vitals")
-          .select("id, blood_pressure_sys, blood_pressure_dia, pulse, taken_at, note")
-          .eq("patient_id", profile.id)
-          .order("taken_at", { ascending: false })
-          .limit(20),
+          .select("id, blood_pressure_sys, blood_pressure_dia, pulse, blood_glucose, taken_at, note")
+          .eq("patient_id", profile.id).order("taken_at", { ascending: false }).limit(20),
         supabase
           .from("patient_settings")
           .select("caregiver_phone")
-          .eq("patient_id", profile.id)
-          .maybeSingle(),
+          .eq("patient_id", profile.id).maybeSingle(),
       ]);
       if (error) toast.error(error.message);
       setMeds((medsData ?? []) as MyMed[]);
@@ -116,17 +121,22 @@ function Page() {
       setVitals((vitalsData ?? []) as DbVital[]);
       setCaregiverPhone(settings?.caregiver_phone ?? "");
       setLoading(false);
+
+      // Streak evaluation runs in background after page load
+      evaluateStreak(profile.id).then((s) => {
+        setStreak(s.current_streak);
+        setStreakDoneToday(s.fully_done_today);
+      }).catch(() => {});
     };
     load();
   }, [profile?.id, reload]);
 
-  // tick every 30s so due-state updates without refresh
+  // Local clock tick every 30s — works offline, drives DueTakeover even without network
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
 
-  // pick earliest med in approaching/due/overdue not yet logged today
   const dueMed = (() => {
     let best: { med: MyMed; info: ReturnType<typeof computeWindow> } | null = null;
     for (const m of meds) {
@@ -142,6 +152,7 @@ function Page() {
 
   const waNumber = sanitizeForWhatsApp(caregiverPhone);
   const waUrl = `https://wa.me/${waNumber}`;
+  const openWa = () => window.open(waUrl, "_blank", "noopener,noreferrer");
   const [showVitals, setShowVitals] = useState(false);
 
   const lowStock = meds.filter((m) => {
@@ -153,40 +164,44 @@ function Page() {
   return (
     <AppShell title={t("my_meds")}>
       <div className="flex-1 px-4 pt-4 pb-24">
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-2.5 mb-4">
-          <a
-            href="tel:999"
-            className="text-center bg-red text-white font-extrabold text-fs-sm py-4 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform"
-          >
-            {t("emergency_999")}
-          </a>
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-center bg-green text-white font-extrabold text-fs-sm py-4 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform"
-          >
-            {t("contact_caregiver")}
-          </a>
+        {/* Streak badge */}
+        <div className={`rounded-2xl p-4 mb-4 border-2 ${streak > 0 ? "bg-amber-l border-amber" : "bg-card border-border"}`}>
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">{streak > 0 ? "🔥" : "✨"}</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-extrabold text-fs-base">
+                {streak > 0 ? `${streak} ${t("streak_title")}` : t("streak_start")}
+              </div>
+              <div className="text-fs-xs text-muted-foreground">
+                {streak > 0 ? t("streak_great") : ""}
+                {streakDoneToday && " ✓"}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Today's medications */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4">
+          <a href="tel:999" className="text-center bg-red text-white font-extrabold text-fs-sm py-4 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform">
+            {t("emergency_999")}
+          </a>
+          <button onClick={openWa} className="text-center bg-green text-white font-extrabold text-fs-sm py-4 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform">
+            {t("contact_caregiver")}
+          </button>
+        </div>
+
         <div className="font-extrabold text-fs-sm mb-2.5">{t("medications")}</div>
         {lowStock.length > 0 && (
           <div className="bg-amber-l border border-amber rounded-xl p-3 mb-2.5 text-fs-xs font-bold text-amber">
-            ⚠ Refill needed: {lowStock.map((m) => m.med_name).join(", ")}
+            ⚠ {t("refill_warning")} {lowStock.map((m) => m.med_name).join(", ")}
           </div>
         )}
         {loading ? (
-          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">
-            Loading…
-          </div>
+          <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">{t("settings_loading")}</div>
         ) : meds.length === 0 ? (
           <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm mb-4">
-            No medications yet.{" "}
+            {t("empty_no_meds")}{" "}
             <Link to="/medications" className="text-green font-bold underline">
-              Add one
+              {t("empty_add_one")}
             </Link>
             .
           </div>
@@ -196,22 +211,13 @@ function Page() {
             const daysLeft = d > 0 ? Math.floor(m.remaining_qty / d) : null;
             const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
             return (
-              <div
-                key={m.id}
-                className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
-              >
+              <div key={m.id} className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
-                    <div className="text-fs-xs text-muted-foreground mt-0.5">
-                      {m.frequency} · {m.scheduled_time.slice(0, 5)}
-                    </div>
+                    <div className="text-fs-xs text-muted-foreground mt-0.5">{m.frequency} · {m.scheduled_time.slice(0, 5)}</div>
                   </div>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${
-                      low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"
-                    }`}
-                  >
+                  <span className={`px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"}`}>
                     {m.remaining_qty} {m.unit}
                   </span>
                 </div>
@@ -220,13 +226,9 @@ function Page() {
           })
         )}
 
-        {/* Vitals */}
         <div className="flex items-center justify-between mt-5 mb-2.5">
           <div className="font-extrabold text-fs-sm">{t("vitals_title")}</div>
-          <button
-            onClick={() => setShowVitals(true)}
-            className="text-green text-fs-xs font-bold bg-transparent border-none px-2 py-1 rounded-lg hover:bg-green-l"
-          >
+          <button onClick={() => setShowVitals(true)} className="text-green text-fs-xs font-bold bg-transparent border-none px-2 py-1 rounded-lg hover:bg-green-l">
             {t("vitals_add")}
           </button>
         </div>
@@ -237,15 +239,11 @@ function Page() {
           </div>
         ) : (
           vitals.map((v) => (
-            <VitalCard
-              key={v.id}
-              v={v}
-              onDelete={async () => {
-                const { error } = await supabase.from("vitals").delete().eq("id", v.id);
-                if (error) return toast.error(error.message);
-                setVitals((prev) => prev.filter((x) => x.id !== v.id));
-              }}
-            />
+            <VitalCard key={v.id} v={v} onDelete={async () => {
+              const { error } = await supabase.from("vitals").delete().eq("id", v.id);
+              if (error) return toast.error(error.message);
+              setVitals((prev) => prev.filter((x) => x.id !== v.id));
+            }} />
           ))
         )}
       </div>
@@ -259,13 +257,14 @@ function Page() {
               .from("vitals")
               .insert({
                 patient_id: profile.id,
-                blood_pressure_sys: v.systolic,
-                blood_pressure_dia: v.diastolic,
+                blood_pressure_sys: v.systolic ?? null,
+                blood_pressure_dia: v.diastolic ?? null,
                 pulse: v.pulse ?? null,
+                blood_glucose: v.glucose ?? null,
                 note: v.note ?? null,
                 taken_at: v.takenAt,
               })
-              .select("id, blood_pressure_sys, blood_pressure_dia, pulse, taken_at, note")
+              .select("id, blood_pressure_sys, blood_pressure_dia, pulse, blood_glucose, taken_at, note")
               .single();
             if (error) return toast.error(error.message);
             if (data) setVitals((prev) => [data as DbVital, ...prev]);
@@ -290,36 +289,37 @@ function Page() {
 
 function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
   const t = useT_hook();
-  const cat = bpCategory(v.blood_pressure_sys, v.blood_pressure_dia);
+  const bp = bpCategory(v.blood_pressure_sys, v.blood_pressure_dia);
+  const gl = glucoseCategory(v.blood_glucose);
   return (
     <div className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-display text-fs-xl font-semibold">{v.blood_pressure_sys}</span>
-            <span className="text-muted-foreground font-bold">/</span>
-            <span className="font-display text-fs-xl font-semibold">{v.blood_pressure_dia}</span>
-            <span className="text-fs-xs text-muted-foreground ml-1">{t("vitals_unit")}</span>
-          </div>
-          {v.pulse && (
-            <div className="text-fs-xs text-muted-foreground mt-0.5">
-              ❤️ {v.pulse} bpm
+        <div className="min-w-0 flex-1">
+          {v.blood_pressure_sys != null && v.blood_pressure_dia != null && (
+            <div className="flex items-baseline gap-1">
+              <span className="font-display text-fs-xl font-semibold">{v.blood_pressure_sys}</span>
+              <span className="text-muted-foreground font-bold">/</span>
+              <span className="font-display text-fs-xl font-semibold">{v.blood_pressure_dia}</span>
+              <span className="text-fs-xs text-muted-foreground ml-1">{t("vitals_unit")}</span>
             </div>
+          )}
+          {v.blood_glucose != null && (
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-fs-xs text-muted-foreground">🩸 {t("vitals_glucose")}:</span>
+              <span className="font-display text-fs-lg font-semibold">{v.blood_glucose}</span>
+              <span className="text-fs-xs text-muted-foreground">{t("vitals_glucose_unit")}</span>
+            </div>
+          )}
+          {v.pulse != null && (
+            <div className="text-fs-xs text-muted-foreground mt-0.5">❤️ {v.pulse} bpm</div>
           )}
           <div className="text-fs-xs text-muted-foreground mt-1">{fmtDateTime(v.taken_at)}</div>
           {v.note && <div className="text-fs-xs text-foreground mt-1 italic">"{v.note}"</div>}
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <span className={`px-2.5 py-1 rounded-full text-fs-xs font-bold ${cat.cls}`}>
-            {t(cat.label)}
-          </span>
-          <button
-            onClick={onDelete}
-            className="text-muted-foreground hover:text-red text-fs-xs font-bold"
-            aria-label="Delete reading"
-          >
-            ✕
-          </button>
+        <div className="flex flex-col items-end gap-1.5">
+          {bp && <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${bp.cls}`}>BP: {t(bp.key)}</span>}
+          {gl && <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${gl.cls}`}>🩸 {t(gl.key)}</span>}
+          <button onClick={onDelete} className="text-muted-foreground hover:text-red text-fs-xs font-bold mt-1" aria-label="Delete">✕</button>
         </div>
       </div>
     </div>
@@ -327,99 +327,86 @@ function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
 }
 
 function AddVitalModal({
-  onClose,
-  onSave,
+  onClose, onSave,
 }: {
   onClose: () => void;
-  onSave: (v: { systolic: number; diastolic: number; pulse?: number; takenAt: string; note?: string }) => void;
+  onSave: (v: { systolic?: number; diastolic?: number; pulse?: number; glucose?: number; takenAt: string; note?: string }) => void;
 }) {
   const t = useT_hook();
   const [sys, setSys] = useState("");
   const [dia, setDia] = useState("");
   const [pulse, setPulse] = useState("");
+  const [glucose, setGlucose] = useState("");
   const [note, setNote] = useState("");
 
   const sysN = parseInt(sys, 10);
   const diaN = parseInt(dia, 10);
-  const valid = sysN >= 60 && sysN <= 250 && diaN >= 30 && diaN <= 160;
+  const glN = parseFloat(glucose);
+  const bpValid = !sys && !dia ? true : (sysN >= 60 && sysN <= 250 && diaN >= 30 && diaN <= 160);
+  const glValid = !glucose ? true : (Number.isFinite(glN) && glN > 0 && glN < 50);
+  const hasAny = !!sys || !!dia || !!glucose;
+  const valid = bpValid && glValid && hasAny;
+
+  const glCat = glucoseCategory(Number.isFinite(glN) ? glN : null);
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-[400] flex items-end justify-center"
-      onClick={onClose}
-    >
-      <div
-        className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 shadow-[0_-4px_24px_rgba(0,0,0,0.2)]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 bg-black/50 z-[400] flex items-end justify-center" onClick={onClose}>
+      <div className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 shadow-[0_-4px_24px_rgba(0,0,0,0.2)] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
         <div className="font-display text-fs-xl font-semibold mb-4">{t("vitals_title")}</div>
 
+        <div className="font-extrabold text-fs-xs text-muted-foreground mb-2 uppercase tracking-wider">{t("vitals_bp")}</div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <label className="block">
             <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_systolic")}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={sys}
-              onChange={(e) => setSys(e.target.value)}
-              className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-fs-lg font-extrabold text-center"
-              placeholder="120"
-            />
+            <input type="number" inputMode="numeric" value={sys} onChange={(e) => setSys(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-fs-lg font-extrabold text-center" placeholder="120" />
           </label>
           <label className="block">
             <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_diastolic")}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={dia}
-              onChange={(e) => setDia(e.target.value)}
-              className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-fs-lg font-extrabold text-center"
-              placeholder="80"
-            />
+            <input type="number" inputMode="numeric" value={dia} onChange={(e) => setDia(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-fs-lg font-extrabold text-center" placeholder="80" />
           </label>
         </div>
 
         <label className="block mb-3">
           <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_pulse")}</span>
+          <input type="number" inputMode="numeric" value={pulse} onChange={(e) => setPulse(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" placeholder="72" />
+        </label>
+
+        <div className="font-extrabold text-fs-xs text-muted-foreground mb-2 mt-4 uppercase tracking-wider">🩸 {t("vitals_glucose")}</div>
+        <label className="block mb-2">
+          <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_glucose_optional")}</span>
           <input
-            type="number"
-            inputMode="numeric"
-            value={pulse}
-            onChange={(e) => setPulse(e.target.value)}
+            type="number" step="0.1" inputMode="decimal" value={glucose}
+            onChange={(e) => setGlucose(e.target.value)}
             className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5"
-            placeholder="72"
+            placeholder="5.4"
           />
         </label>
+        {glCat && (
+          <div className="mb-3">
+            <span className={`inline-block px-2.5 py-1 rounded-full text-fs-xs font-bold ${glCat.cls}`}>
+              {t(glCat.key)} ({glN} {t("vitals_glucose_unit")})
+            </span>
+          </div>
+        )}
 
         <label className="block mb-4">
           <span className="text-fs-xs font-bold text-muted-foreground">{t("vitals_note")}</span>
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5"
-            placeholder="Before breakfast"
-          />
+          <input value={note} onChange={(e) => setNote(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" placeholder="Before breakfast" />
         </label>
 
         <div className="flex gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-input-bg text-foreground font-bold py-3 rounded-xl"
-          >
-            {t("cancel")}
-          </button>
+          <button onClick={onClose} className="flex-1 bg-input-bg text-foreground font-bold py-3 rounded-xl">{t("cancel")}</button>
           <button
             disabled={!valid}
-            onClick={() =>
-              onSave({
-                systolic: sysN,
-                diastolic: diaN,
-                pulse: pulse ? parseInt(pulse, 10) : undefined,
-                takenAt: new Date().toISOString(),
-                note: note.trim() || undefined,
-              })
-            }
+            onClick={() => onSave({
+              systolic: sys ? sysN : undefined,
+              diastolic: dia ? diaN : undefined,
+              pulse: pulse ? parseInt(pulse, 10) : undefined,
+              glucose: glucose ? glN : undefined,
+              takenAt: new Date().toISOString(),
+              note: note.trim() || undefined,
+            })}
             className="flex-1 bg-green text-white font-bold py-3 rounded-xl disabled:opacity-50"
           >
             {t("vitals_save")}

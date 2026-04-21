@@ -1,0 +1,49 @@
+/**
+ * Client-side role guard hook.
+ * Prevents users from accessing routes outside their role's permitted pages.
+ *
+ * Patient routes: /my-meds, /clinics, /link, /settings, /alerts (own logs)
+ * Caregiver routes: /dashboard, /medications, /alerts, /clinics, /link, /settings, /calendar
+ */
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/integrations/supabase/auth-provider";
+
+const PATIENT_ALLOWED = new Set([
+  "/my-meds",
+  "/clinics",
+  "/link",
+  "/settings",
+  "/alerts",
+]);
+
+const CAREGIVER_ALLOWED = new Set([
+  "/dashboard",
+  "/medications",
+  "/alerts",
+  "/clinics",
+  "/link",
+  "/settings",
+  "/calendar",
+  "/history",
+]);
+
+export function useRoleGuard(currentPath: string) {
+  const { profile, session, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session) {
+      navigate({ to: "/login" });
+      return;
+    }
+    if (!profile?.role) return;
+
+    if (profile.role === "patient" && !PATIENT_ALLOWED.has(currentPath)) {
+      navigate({ to: "/my-meds" });
+    } else if (profile.role === "caregiver" && !CAREGIVER_ALLOWED.has(currentPath)) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [loading, session, profile?.role, currentPath, navigate]);
+}

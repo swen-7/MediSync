@@ -169,28 +169,34 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          current_streak: number
           full_name: string
           id: string
           invite_code: string | null
           language_pref: Database["public"]["Enums"]["lang_code"]
+          last_streak_date: string | null
           phone: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          current_streak?: number
           full_name?: string
           id: string
           invite_code?: string | null
           language_pref?: Database["public"]["Enums"]["lang_code"]
+          last_streak_date?: string | null
           phone?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          current_streak?: number
           full_name?: string
           id?: string
           invite_code?: string | null
           language_pref?: Database["public"]["Enums"]["lang_code"]
+          last_streak_date?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -219,8 +225,9 @@ export type Database = {
       }
       vitals: {
         Row: {
-          blood_pressure_dia: number
-          blood_pressure_sys: number
+          blood_glucose: number | null
+          blood_pressure_dia: number | null
+          blood_pressure_sys: number | null
           created_at: string
           id: string
           note: string | null
@@ -229,8 +236,9 @@ export type Database = {
           taken_at: string
         }
         Insert: {
-          blood_pressure_dia: number
-          blood_pressure_sys: number
+          blood_glucose?: number | null
+          blood_pressure_dia?: number | null
+          blood_pressure_sys?: number | null
           created_at?: string
           id?: string
           note?: string | null
@@ -239,8 +247,9 @@ export type Database = {
           taken_at?: string
         }
         Update: {
-          blood_pressure_dia?: number
-          blood_pressure_sys?: number
+          blood_glucose?: number | null
+          blood_pressure_dia?: number | null
+          blood_pressure_sys?: number | null
           created_at?: string
           id?: string
           note?: string | null

@@ -41,9 +41,10 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // After auth resolves, route by role
+  // After auth resolves, route by DB role (single source of truth)
   useEffect(() => {
     if (loading || !session || !profile) return;
+    if (!profile.role) return; // wait for role to load
     navigate({ to: profile.role === "patient" ? "/my-meds" : "/dashboard" });
   }, [loading, session, profile, navigate]);
 
@@ -83,6 +84,7 @@ function LoginPage() {
           password: parsed.data.password,
         });
         if (error) throw error;
+        // role + redirect handled by useEffect above
       }
     } catch (e: any) {
       toast.error(e?.message || "Something went wrong");
@@ -98,7 +100,6 @@ function LoginPage() {
         redirect_uri: window.location.origin,
       });
       if (result.error) throw result.error;
-      // result.redirected = true → browser navigates away
     } catch (e: any) {
       toast.error(e?.message || "Google sign-in failed");
       setBusy(false);
@@ -115,23 +116,25 @@ function LoginPage() {
           {isSU ? "Join Ping" : "Sign in to continue"}
         </div>
 
-        <div className="flex gap-2 mb-4">
-          {(["supervisor", "elderly"] as const).map((r) => (
-            <button
-              key={r}
-              onClick={() => setLoginRole(r)}
-              disabled={!isSU /* role only matters for signup */}
-              className={`flex-1 py-3 px-1.5 rounded-2xl border-[1.5px] font-bold text-fs-sm transition-colors disabled:opacity-50 ${
-                loginRole === r
-                  ? "border-green bg-green-l text-green"
-                  : "border-border bg-card text-muted-foreground"
-              }`}
-            >
-              {r === "supervisor" ? "👨‍👩‍👧 " : "👴 "}
-              {t(r)}
-            </button>
-          ))}
-        </div>
+        {/* Role toggle ONLY visible during signup. On sign-in, role comes from DB. */}
+        {isSU && (
+          <div className="flex gap-2 mb-4">
+            {(["supervisor", "elderly"] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setLoginRole(r)}
+                className={`flex-1 py-3 px-1.5 rounded-2xl border-[1.5px] font-bold text-fs-sm transition-colors ${
+                  loginRole === r
+                    ? "border-green bg-green-l text-green"
+                    : "border-border bg-card text-muted-foreground"
+                }`}
+              >
+                {r === "supervisor" ? "👨‍👩‍👧 " : "👴 "}
+                {t(r)}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="bg-card rounded-2xl p-5 shadow-[var(--shadow-ping)] border border-border mb-3">
           {isSU && (

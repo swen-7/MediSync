@@ -6,6 +6,8 @@ import { useAuth } from "@/integrations/supabase/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { usePatients } from "@/lib/patientContext";
 import { PatientSwitcher } from "@/components/ping/PatientSwitcher";
+import { useRoleGuard } from "@/lib/roleGuard";
+import { useLocation } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -20,6 +22,8 @@ export const Route = createFileRoute("/dashboard")({
 function Dashboard() {
   const t = useT_hook();
   const navigate = useNavigate();
+  const location = useLocation();
+  useRoleGuard(location.pathname);
   const { session, loading } = useAuth();
   const { selected } = usePatients();
   const patientId = selected?.id ?? null;

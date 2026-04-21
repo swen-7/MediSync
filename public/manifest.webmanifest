@@ -1,0 +1,11 @@
+{
+  "name": "Ping — Medication Reminders",
+  "short_name": "Ping",
+  "description": "Never miss the moment that matters.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2a9d6e",
+  "orientation": "portrait",
+  "icons": [{ "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }]
+}
