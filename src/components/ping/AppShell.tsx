@@ -25,6 +25,8 @@ export function AppShell({ title, children }: { title?: string; children: ReactN
     navigate({ to: "/" });
   };
 
+  const goSettings = () => navigate({ to: "/settings" });
+
   return (
     <div className="min-h-screen flex flex-col max-w-[480px] mx-auto bg-background relative">
       <nav className="bg-[var(--nav-bg)] border-b border-border px-3.5 h-[54px] flex items-center justify-between sticky top-0 z-[200] shadow-[var(--shadow-ping)]">
@@ -59,13 +61,22 @@ export function AppShell({ title, children }: { title?: string; children: ReactN
             {theme === "light" ? t("dark") : t("light")}
           </button>
           {profile && (
-            <button
-              onClick={handleSignOut}
-              title="Sign out"
-              className="w-[34px] h-[34px] rounded-full bg-green-l border-2 border-green-m flex items-center justify-center text-[0.7rem] font-extrabold text-green hover:bg-red-l hover:border-red hover:text-red transition-colors"
-            >
-              {initials(profile.full_name || "U")}
-            </button>
+            <>
+              <button
+                onClick={goSettings}
+                title="Settings"
+                className="w-[34px] h-[34px] rounded-full bg-green-l border-2 border-green-m flex items-center justify-center text-[0.7rem] font-extrabold text-green hover:bg-green hover:text-white transition-colors"
+              >
+                {initials(profile.full_name || "U")}
+              </button>
+              <button
+                onClick={handleSignOut}
+                title="Sign out"
+                className="text-muted-foreground text-fs-xs px-2 py-1.5 rounded-lg hover:bg-red-l hover:text-red"
+              >
+                ⎋
+              </button>
+            </>
           )}
         </div>
       </nav>
@@ -88,14 +99,14 @@ function BottomTabs() {
     { to: "/dashboard", icon: "🏠", lbl: t("home_tab") },
     { to: "/medications", icon: "💊", lbl: t("meds_tab") },
     { to: "/alerts", icon: "🔔", lbl: t("alerts_tab") },
-    { to: "/link", icon: "🔗", lbl: t("link_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
+    { to: "/settings", icon: "⚙️", lbl: "Settings" },
   ];
   const eldTabs = [
     { to: "/my-meds", icon: "💊", lbl: t("my_meds") },
-    { to: "/medications", icon: "📋", lbl: t("meds_tab") },
-    { to: "/link", icon: "🔗", lbl: t("link_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
+    { to: "/link", icon: "🔗", lbl: t("link_tab") },
+    { to: "/settings", icon: "⚙️", lbl: "Settings" },
   ];
   const tabs = profile.role === "patient" ? eldTabs : supTabs;
 
