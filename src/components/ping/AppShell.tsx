@@ -100,13 +100,13 @@ function BottomTabs() {
     { to: "/medications", icon: "💊", lbl: t("meds_tab") },
     { to: "/alerts", icon: "🔔", lbl: t("alerts_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
-    { to: "/settings", icon: "⚙️", lbl: "Settings" },
+    { to: "/settings", icon: "⚙️", lbl: t("settings_tab") },
   ];
   const eldTabs = [
     { to: "/my-meds", icon: "💊", lbl: t("my_meds") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
     { to: "/link", icon: "🔗", lbl: t("link_tab") },
-    { to: "/settings", icon: "⚙️", lbl: "Settings" },
+    { to: "/settings", icon: "⚙️", lbl: t("settings_tab") },
   ];
   const tabs = profile.role === "patient" ? eldTabs : supTabs;
 

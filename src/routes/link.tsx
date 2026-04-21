@@ -5,6 +5,7 @@ import { AppShell } from "@/components/ping/AppShell";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { usePatients } from "@/lib/patientContext";
+import { useT_hook } from "@/store/usePingStore";
 
 export const Route = createFileRoute("/link")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/link")({
 });
 
 function LinkPage() {
+  const t = useT_hook();
   const { profile, loading, session } = useAuth();
   const navigate = useNavigate();
 
@@ -27,13 +29,13 @@ function LinkPage() {
   if (!profile) {
     return (
       <AppShell title="Link">
-        <div className="flex-1 px-4 pt-6 pb-24 text-center text-muted-foreground">Loading…</div>
+        <div className="flex-1 px-4 pt-6 pb-24 text-center text-muted-foreground">{t("settings_loading")}</div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell title="Link accounts">
+    <AppShell title={t("link_tab")}>
       <div className="flex-1 px-4 pt-4 pb-24">
         {profile.role === "patient" ? <PatientView /> : <CaregiverView />}
       </div>
@@ -42,43 +44,37 @@ function LinkPage() {
 }
 
 function PatientView() {
+  const t = useT_hook();
   const { profile } = useAuth();
   const code = profile?.invite_code ?? "------";
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
-      toast.success("Code copied");
+      toast.success(t("link_copied"));
     } catch {
-      toast.error("Couldn't copy — please write it down");
+      toast.error(t("link_copy_failed"));
     }
   };
   return (
     <>
-      <h2 className="font-display text-fs-xl font-semibold mb-1">Your invite code</h2>
-      <p className="text-fs-sm text-muted-foreground mb-4">
-        Share this 6-digit code with your caregiver. They'll enter it on their phone to start
-        receiving your medication updates.
-      </p>
+      <h2 className="font-display text-fs-xl font-semibold mb-1">{t("link_invite_heading")}</h2>
+      <p className="text-fs-sm text-muted-foreground mb-4">{t("link_invite_sub")}</p>
       <div className="bg-card rounded-2xl p-6 shadow-[var(--shadow-ping)] border border-border text-center mb-3">
-        <div className="text-fs-xs uppercase tracking-wider text-hint font-bold mb-2">Code</div>
+        <div className="text-fs-xs uppercase tracking-wider text-hint font-bold mb-2">{t("link_code")}</div>
         <div className="font-display text-[3rem] font-semibold tracking-[0.4rem] text-green leading-none">
           {code}
         </div>
-        <button
-          onClick={copy}
-          className="mt-4 bg-green-l text-green font-bold py-2.5 px-5 rounded-xl text-fs-sm"
-        >
-          📋 Copy code
+        <button onClick={copy} className="mt-4 bg-green-l text-green font-bold py-2.5 px-5 rounded-xl text-fs-sm">
+          {t("link_copy")}
         </button>
       </div>
-      <p className="text-fs-xs text-muted-foreground text-center">
-        Caregivers can scan multiple patients — re-using this code is safe.
-      </p>
+      <p className="text-fs-xs text-muted-foreground text-center">{t("link_safe_reuse")}</p>
     </>
   );
 }
 
 function CaregiverView() {
+  const t = useT_hook();
   const { patients, refresh, setSelectedId } = usePatients();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -86,41 +82,39 @@ function CaregiverView() {
   const submit = async () => {
     const cleaned = code.replace(/\D/g, "").slice(0, 6);
     if (cleaned.length !== 6) {
-      toast.error("Enter the 6-digit code");
+      toast.error(t("link_enter_code"));
       return;
     }
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc("redeem_invite_code", { _code: cleaned });
       if (error) throw error;
-      toast.success("Patient linked");
+      toast.success(t("link_patient_linked"));
       setCode("");
       await refresh();
       if (data) setSelectedId(data as string);
     } catch (e: any) {
-      toast.error(e?.message?.includes("Invalid") ? "Invalid code" : e?.message ?? "Failed to link");
+      toast.error(e?.message?.includes("Invalid") ? t("link_invalid") : e?.message ?? t("link_failed"));
     } finally {
       setBusy(false);
     }
   };
 
   const unlink = async (id: string, name: string) => {
-    if (!confirm(`Unlink ${name}?`)) return;
+    if (!confirm(`${t("link_unlink_confirm")} ${name}?`)) return;
     const { error } = await supabase.from("patients_caregivers").delete().eq("patient_id", id);
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success("Unlinked");
+    toast.success(t("link_unlinked"));
     await refresh();
   };
 
   return (
     <>
-      <h2 className="font-display text-fs-xl font-semibold mb-1">Link a patient</h2>
-      <p className="text-fs-sm text-muted-foreground mb-4">
-        Ask your loved one to open <strong>Link</strong> on their phone and read you the 6-digit code.
-      </p>
+      <h2 className="font-display text-fs-xl font-semibold mb-1">{t("link_caregiver_heading")}</h2>
+      <p className="text-fs-sm text-muted-foreground mb-4">{t("link_caregiver_sub")}</p>
       <div className="bg-card rounded-2xl p-5 shadow-[var(--shadow-ping)] border border-border mb-5">
         <input
           inputMode="numeric"
@@ -135,16 +129,16 @@ function CaregiverView() {
           disabled={busy || code.length !== 6}
           className="w-full mt-3 bg-green text-white font-bold py-3 rounded-xl disabled:opacity-50"
         >
-          {busy ? "Linking…" : "Link patient"}
+          {busy ? t("link_linking") : t("link_link_btn")}
         </button>
       </div>
 
       <h3 className="font-extrabold text-fs-sm mb-2.5">
-        Linked patients ({patients.length})
+        {t("link_linked_patients")} ({patients.length})
       </h3>
       {patients.length === 0 ? (
         <div className="bg-card rounded-2xl p-5 border border-border text-center text-muted-foreground text-fs-sm">
-          No patients linked yet.
+          {t("link_no_patients")}
         </div>
       ) : (
         patients.map((p) => (
@@ -154,15 +148,13 @@ function CaregiverView() {
           >
             <div>
               <div className="font-extrabold text-fs-base">{p.full_name}</div>
-              {p.phone && (
-                <div className="text-fs-xs text-muted-foreground mt-0.5">{p.phone}</div>
-              )}
+              {p.phone && <div className="text-fs-xs text-muted-foreground mt-0.5">{p.phone}</div>}
             </div>
             <button
               onClick={() => unlink(p.id, p.full_name)}
               className="text-red text-fs-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-l"
             >
-              Unlink
+              {t("link_unlink")}
             </button>
           </div>
         ))
