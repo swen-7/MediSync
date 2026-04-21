@@ -64,20 +64,21 @@ function freqDoses(f: string) {
 
 function Page() {
   const t = useT_hook();
-  const { caregiverPhone, vitals, addVital, deleteVital } = usePingStore();
   const { profile } = useAuth();
   const [meds, setMeds] = useState<MyMed[]>([]);
   const [loading, setLoading] = useState(true);
   const [loggedToday, setLoggedToday] = useState<Set<string>>(new Set());
   const [now, setNow] = useState<Date>(() => new Date());
   const [reload, setReload] = useState(0);
+  const [caregiverPhone, setCaregiverPhone] = useState<string>("");
+  const [vitals, setVitals] = useState<DbVital[]>([]);
 
   useEffect(() => {
     const load = async () => {
       if (!profile?.id) return;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
-      const [{ data: medsData, error }, { data: logsData }] = await Promise.all([
+      const [{ data: medsData, error }, { data: logsData }, { data: vitalsData }, { data: settings }] = await Promise.all([
         supabase
           .from("medications")
           .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
@@ -89,10 +90,23 @@ function Page() {
           .select("medication_id, due_at")
           .eq("patient_id", profile.id)
           .gte("due_at", startOfDay.toISOString()),
+        supabase
+          .from("vitals")
+          .select("id, blood_pressure_sys, blood_pressure_dia, pulse, taken_at, note")
+          .eq("patient_id", profile.id)
+          .order("taken_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("patient_settings")
+          .select("caregiver_phone")
+          .eq("patient_id", profile.id)
+          .maybeSingle(),
       ]);
       if (error) toast.error(error.message);
       setMeds((medsData ?? []) as MyMed[]);
       setLoggedToday(new Set((logsData ?? []).map((l) => l.medication_id)));
+      setVitals((vitalsData ?? []) as DbVital[]);
+      setCaregiverPhone(settings?.caregiver_phone ?? "");
       setLoading(false);
     };
     load();
