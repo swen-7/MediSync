@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as PatientDashboardRouteImport } from './routes/patient-dashboard'
 import { Route as MyMedsRouteImport } from './routes/my-meds'
 import { Route as MedicationsRouteImport } from './routes/medications'
 import { Route as LoginRouteImport } from './routes/login'
@@ -20,10 +21,16 @@ import { Route as ClinicsRouteImport } from './routes/clinics'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPushVapidRouteImport } from './routes/api.push.vapid'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatientDashboardRoute = PatientDashboardRouteImport.update({
+  id: '/patient-dashboard',
+  path: '/patient-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyMedsRoute = MyMedsRouteImport.update({
@@ -76,6 +83,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPushVapidRoute = ApiPushVapidRouteImport.update({
+  id: '/api/push/vapid',
+  path: '/api/push/vapid',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,7 +100,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
+  '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
+  '/api/push/vapid': typeof ApiPushVapidRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,7 +115,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
+  '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
+  '/api/push/vapid': typeof ApiPushVapidRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,7 +131,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
+  '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
+  '/api/push/vapid': typeof ApiPushVapidRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,7 +148,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/medications'
     | '/my-meds'
+    | '/patient-dashboard'
     | '/settings'
+    | '/api/push/vapid'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -143,7 +163,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/medications'
     | '/my-meds'
+    | '/patient-dashboard'
     | '/settings'
+    | '/api/push/vapid'
   id:
     | '__root__'
     | '/'
@@ -156,7 +178,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/medications'
     | '/my-meds'
+    | '/patient-dashboard'
     | '/settings'
+    | '/api/push/vapid'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -170,7 +194,9 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MedicationsRoute: typeof MedicationsRoute
   MyMedsRoute: typeof MyMedsRoute
+  PatientDashboardRoute: typeof PatientDashboardRoute
   SettingsRoute: typeof SettingsRoute
+  ApiPushVapidRoute: typeof ApiPushVapidRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patient-dashboard': {
+      id: '/patient-dashboard'
+      path: '/patient-dashboard'
+      fullPath: '/patient-dashboard'
+      preLoaderRoute: typeof PatientDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-meds': {
@@ -252,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/push/vapid': {
+      id: '/api/push/vapid'
+      path: '/api/push/vapid'
+      fullPath: '/api/push/vapid'
+      preLoaderRoute: typeof ApiPushVapidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -266,8 +306,19 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MedicationsRoute: MedicationsRoute,
   MyMedsRoute: MyMedsRoute,
+  PatientDashboardRoute: PatientDashboardRoute,
   SettingsRoute: SettingsRoute,
+  ApiPushVapidRoute: ApiPushVapidRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
