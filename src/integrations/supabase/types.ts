@@ -23,6 +23,8 @@ export type Database = {
           medication_id: string
           notes: string | null
           patient_id: string
+          photo1_url: string | null
+          photo2_url: string | null
           resolved_at: string | null
           resolved_by_caregiver_id: string | null
           status: Database["public"]["Enums"]["log_status"]
@@ -37,6 +39,8 @@ export type Database = {
           medication_id: string
           notes?: string | null
           patient_id: string
+          photo1_url?: string | null
+          photo2_url?: string | null
           resolved_at?: string | null
           resolved_by_caregiver_id?: string | null
           status?: Database["public"]["Enums"]["log_status"]
@@ -51,6 +55,8 @@ export type Database = {
           medication_id?: string
           notes?: string | null
           patient_id?: string
+          photo1_url?: string | null
+          photo2_url?: string | null
           resolved_at?: string | null
           resolved_by_caregiver_id?: string | null
           status?: Database["public"]["Enums"]["log_status"]
@@ -168,6 +174,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           created_at: string
           current_streak: number
           full_name: string
@@ -179,6 +186,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age?: number | null
           created_at?: string
           current_streak?: number
           full_name?: string
@@ -190,6 +198,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age?: number | null
           created_at?: string
           current_streak?: number
           full_name?: string
@@ -199,6 +208,36 @@ export type Database = {
           last_streak_date?: string | null
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
