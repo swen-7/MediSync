@@ -254,3 +254,58 @@ function ActiveCard({
     </div>
   );
 }
+
+function HistoryCard({
+  a, fmt, photoUrl, t,
+}: {
+  a: AlertRow;
+  fmt: (iso: string) => string;
+  photoUrl: (path: string) => Promise<string | null>;
+  t: (k: string) => string;
+}) {
+  const [thumb1, setThumb1] = useState<string | null>(null);
+  const [thumb2, setThumb2] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (a.photo1_url) {
+        const u = await photoUrl(a.photo1_url);
+        if (!cancelled) setThumb1(u);
+      }
+      if (a.photo2_url) {
+        const u = await photoUrl(a.photo2_url);
+        if (!cancelled) setThumb2(u);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [a.photo1_url, a.photo2_url, photoUrl]);
+
+  return (
+    <div className="bg-card rounded-xl p-3 mb-2 border border-border opacity-90">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-bold text-fs-sm truncate">{a.med_name}</div>
+          <div className="text-fs-xs text-muted-foreground">{fmt(a.due_at)}</div>
+        </div>
+        <span className="bg-green-l text-green text-fs-xs font-bold px-2.5 py-1 rounded-full shrink-0">
+          ✓ {a.status === "confirmed" ? "Taken" : t("alert_resolved")}
+        </span>
+      </div>
+      {(thumb1 || thumb2) && (
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {thumb1 && (
+            <a href={thumb1} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border bg-black">
+              <img src={thumb1} alt="Pill in hand" className="w-full h-full object-cover" />
+            </a>
+          )}
+          {thumb2 && (
+            <a href={thumb2} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border bg-black">
+              <img src={thumb2} alt="Empty hand" className="w-full h-full object-cover" />
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
