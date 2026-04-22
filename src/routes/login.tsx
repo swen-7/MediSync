@@ -107,7 +107,7 @@ function LoginPage() {
   };
 
   return (
-    <AppShell title="Ping.">
+    <AppShell title="Ping." showTabs={false}>
       <div className="flex-1 px-4 pt-3.5 pb-24">
         <div className="font-display text-fs-xl font-semibold mt-1.5 mb-1">
           {isSU ? t("create_account") : t("sign_in")}

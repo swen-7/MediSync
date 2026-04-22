@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/ping/AppShell";
 import { usePingStore, useT_hook } from "@/store/usePingStore";
+import { useAuth } from "@/integrations/supabase/auth-provider";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,6 +27,13 @@ function Landing() {
   const t = useT_hook();
   const { setLoginRole, setLoginMode } = usePingStore();
   const navigate = useNavigate();
+  const { profile, session, loading } = useAuth();
+
+  // Auth guard: if already signed in, push to the right dashboard
+  useEffect(() => {
+    if (loading || !session || !profile?.role) return;
+    navigate({ to: profile.role === "patient" ? "/my-meds" : "/dashboard" });
+  }, [loading, session, profile?.role, navigate]);
 
   const goLogin = (role: "supervisor" | "elderly") => {
     setLoginRole(role);
@@ -33,7 +42,7 @@ function Landing() {
   };
 
   return (
-    <AppShell>
+    <AppShell showTabs={false}>
       <div>
         <div
           className="px-6 pt-13 pb-10 text-white text-center relative overflow-hidden"
@@ -66,10 +75,10 @@ function Landing() {
 
         <div className="p-5 flex flex-col gap-3">
           {[
-            ["🔔", "4-digit PIN check-in", "Simpler than OTP — a 4-digit push notification PIN delivered at medication time."],
-            ["📅", t("calendar_title"), "Doctor visits, medicine expiry, refill reminders — colour-coded and shared."],
-            ["💊", "Pill photo identification", "Shows elderly a photo of their exact pill to prevent confusion or wrong medication."],
-            ["🔒", "Safety-first design", "Manual 999 authorization, undo actions, PDPA consent, and screen wake lock built in."],
+            ["📷", t("feat1_title"), t("feat1_desc")],
+            ["❤️", t("feat2_title"), t("feat2_desc")],
+            ["🤝", t("feat3_title"), t("feat3_desc")],
+            ["🔒", t("feat4_title"), t("feat4_desc")],
           ].map(([icon, title, desc]) => (
             <div
               key={title as string}
