@@ -10,6 +10,7 @@ import { computeWindow, parseScheduled } from "@/lib/dueLogic";
 import { DueTakeover } from "@/components/ping/DueTakeover";
 import { useRoleGuard } from "@/lib/roleGuard";
 import { evaluateStreak } from "@/lib/streak";
+import { subscribeUserToPush } from "@/lib/push";
 
 interface DbVital {
   id: string;
@@ -136,6 +137,13 @@ function Page() {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
+
+  // Patient opts into background push once on the dashboard.
+  useEffect(() => {
+    if (profile?.id) {
+      subscribeUserToPush(profile.id).catch(() => {});
+    }
+  }, [profile?.id]);
 
   const dueMed = (() => {
     let best: { med: MyMed; info: ReturnType<typeof computeWindow> } | null = null;

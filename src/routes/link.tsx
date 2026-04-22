@@ -78,6 +78,8 @@ function CaregiverView() {
   const { patients, refresh, setSelectedId } = usePatients();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ageDrafts, setAgeDrafts] = useState<Record<string, string>>({});
+  const [savingAge, setSavingAge] = useState<string | null>(null);
 
   const submit = async () => {
     const cleaned = code.replace(/\D/g, "").slice(0, 6);
@@ -108,6 +110,26 @@ function CaregiverView() {
       return;
     }
     toast.success(t("link_unlinked"));
+    await refresh();
+  };
+
+  const saveAge = async (patientId: string) => {
+    const raw = ageDrafts[patientId]?.trim();
+    if (!raw) return;
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 0 || n > 130) {
+      toast.error(t("link_age_invalid"));
+      return;
+    }
+    setSavingAge(patientId);
+    const { error } = await supabase.from("profiles").update({ age: n }).eq("id", patientId);
+    setSavingAge(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(t("link_age_saved"));
+    setAgeDrafts((d) => ({ ...d, [patientId]: "" }));
     await refresh();
   };
 
@@ -144,18 +166,42 @@ function CaregiverView() {
         patients.map((p) => (
           <div
             key={p.id}
-            className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5 flex items-center justify-between gap-2"
+            className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5"
           >
-            <div>
-              <div className="font-extrabold text-fs-base">{p.full_name}</div>
-              {p.phone && <div className="text-fs-xs text-muted-foreground mt-0.5">{p.phone}</div>}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="font-extrabold text-fs-base">{p.full_name}</div>
+                {p.phone && <div className="text-fs-xs text-muted-foreground mt-0.5">{p.phone}</div>}
+                <div className="text-fs-xs text-muted-foreground mt-0.5">
+                  {t("link_age")}: {p.age ?? "—"}
+                </div>
+              </div>
+              <button
+                onClick={() => unlink(p.id, p.full_name)}
+                className="text-red text-fs-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-l"
+              >
+                {t("link_unlink")}
+              </button>
             </div>
-            <button
-              onClick={() => unlink(p.id, p.full_name)}
-              className="text-red text-fs-xs font-bold px-3 py-1.5 rounded-lg hover:bg-red-l"
-            >
-              {t("link_unlink")}
-            </button>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={130}
+                value={ageDrafts[p.id] ?? ""}
+                onChange={(e) => setAgeDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                placeholder={p.age != null ? `${t("link_age_update")} (${p.age})` : t("link_age_set")}
+                className="flex-1 bg-input-bg border border-border rounded-xl px-3 py-2 text-fs-xs"
+              />
+              <button
+                onClick={() => saveAge(p.id)}
+                disabled={savingAge === p.id || !ageDrafts[p.id]}
+                className="bg-green text-white font-bold text-fs-xs px-3 py-2 rounded-xl disabled:opacity-50"
+              >
+                {savingAge === p.id ? "…" : t("link_age_save")}
+              </button>
+            </div>
           </div>
         ))
       )}

@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { useT_hook } from "@/store/usePingStore";
-import { VideoRecorder } from "./VideoRecorder";
+import { PhotoCapture } from "./PhotoCapture";
+import { showLocalNotification } from "@/lib/push";
 import type { DueState } from "@/lib/dueLogic";
 
 export interface DueMed {
@@ -30,7 +31,8 @@ export function DueTakeover({
 }) {
   const t = useT_hook();
   const { profile } = useAuth();
-  const [blob, setBlob] = useState<Blob | null>(null);
+  const [photo1, setPhoto1] = useState<Blob | null>(null);
+  const [photo2, setPhoto2] = useState<Blob | null>(null);
   const [busy, setBusy] = useState(false);
 
   const tone =
@@ -47,15 +49,14 @@ export function DueTakeover({
       ? `Now (${dueAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
       : `${Math.abs(minutesDelta)} min late`;
 
-  const upload = async (logId: string): Promise<string | null> => {
-    if (!blob || !profile?.id) return null;
-    const path = `${profile.id}/${logId}.webm`;
+  const uploadPhoto = async (logId: string, slot: 1 | 2, blob: Blob): Promise<string | null> => {
+    if (!profile?.id) return null;
+    const path = `${profile.id}/${logId}_${slot}.jpg`;
     const { error } = await supabase.storage
-      .from("med-videos")
-      .upload(path, blob, { contentType: blob.type || "video/webm", upsert: true });
+      .from("med-photos")
+      .upload(path, blob, { contentType: "image/jpeg", upsert: true });
     if (error) {
       console.error(error);
-      toast.error("Video upload failed (saved without video).");
       return null;
     }
     return path;
@@ -63,6 +64,10 @@ export function DueTakeover({
 
   const handleConfirm = async () => {
     if (!profile?.id) return;
+    if (!photo1 || !photo2) {
+      toast.error(t("photo_need_both"));
+      return;
+    }
     setBusy(true);
     try {
       // 1. insert log row first to get id
@@ -79,17 +84,44 @@ export function DueTakeover({
         .single();
       if (insErr || !log) throw insErr ?? new Error("log insert failed");
 
-      // 2. upload video and patch row
-      const path = await upload(log.id);
-      if (path) {
-        await supabase.from("medication_logs").update({ video_url: path }).eq("id", log.id);
+      // 2. upload both photos and patch row with their paths
+      const [p1, p2] = await Promise.all([
+        uploadPhoto(log.id, 1, photo1),
+        uploadPhoto(log.id, 2, photo2),
+      ]);
+      if (!p1 || !p2) {
+        toast.error("Photo upload failed — log saved without photos.");
+      } else {
+        await supabase
+          .from("medication_logs")
+          .update({ photo1_url: p1, photo2_url: p2 })
+          .eq("id", log.id);
       }
 
       // 3. decrement remaining_qty
+      const newQty = Math.max(0, med.remaining_qty - 1);
       await supabase
         .from("medications")
-        .update({ remaining_qty: Math.max(0, med.remaining_qty - 1) })
+        .update({ remaining_qty: newQty })
         .eq("id", med.id);
+
+      // 4. fire push side-effects (low-stock + patient affirmation)
+      try {
+        await fetch("/api/push/on-confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientId: profile.id,
+            medicationId: med.id,
+            medName: med.med_name,
+            patientName: profile.full_name,
+            remainingQty: newQty,
+          }),
+        });
+      } catch {
+        /* push failures are non-blocking */
+      }
+      showLocalNotification("✅ Great job!", "You've successfully logged your medication. Keep up the good work!");
 
       toast.success(t("confirmed_taken"));
       onResolved();
@@ -139,10 +171,13 @@ export function DueTakeover({
           </div>
         </div>
 
-        <div className="font-extrabold text-fs-sm mb-2">📹 Record yourself taking it</div>
-        <VideoRecorder onBlob={setBlob} />
+        <div className="font-extrabold text-fs-sm mb-2">{t("photo_two_step_title")}</div>
+        <div className="space-y-3">
+          <PhotoCapture slot={1} prompt={t("photo_prompt_1")} onCaptured={(b) => setPhoto1(b)} />
+          <PhotoCapture slot={2} prompt={t("photo_prompt_2")} onCaptured={(b) => setPhoto2(b)} />
+        </div>
         <div className="text-fs-xs text-muted-foreground text-center mt-2">
-          Optional — your caregiver will see this video.
+          {t("photo_required_note")}
         </div>
       </div>
 
@@ -156,7 +191,7 @@ export function DueTakeover({
         </button>
         <button
           onClick={handleConfirm}
-          disabled={busy}
+          disabled={busy || !photo1 || !photo2}
           className="flex-[2] bg-green text-white font-extrabold py-3.5 rounded-xl disabled:opacity-50 shadow-[var(--shadow-ping)]"
         >
           {busy ? "Saving…" : "✓ I took it"}

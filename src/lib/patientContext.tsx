@@ -15,6 +15,7 @@ export interface LinkedPatient {
   full_name: string;
   phone: string | null;
   invite_code: string | null;
+  age: number | null;
 }
 
 interface Ctx {
@@ -63,7 +64,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
     }
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, full_name, phone, invite_code")
+      .select("id, full_name, phone, invite_code, age")
       .in("id", ids);
     const list = (profs ?? []) as LinkedPatient[];
     setPatients(list);

@@ -25,6 +25,8 @@ interface AlertRow {
   due_at: string;
   resolved_at: string | null;
   video_url: string | null;
+  photo1_url: string | null;
+  photo2_url: string | null;
   med_name: string;
   patient_name: string;
   patient_phone: string | null;
@@ -54,7 +56,7 @@ function Page() {
       startOfDay.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("medication_logs")
-        .select("id, status, due_at, resolved_at, video_url, medication_id, medications(med_name)")
+        .select("id, status, due_at, resolved_at, video_url, photo1_url, photo2_url, medication_id, medications(med_name)")
         .eq("patient_id", patientId)
         .gte("due_at", new Date(Date.now() - 7 * 86_400_000).toISOString())
         .order("due_at", { ascending: false });
@@ -83,6 +85,8 @@ function Page() {
             due_at: info.dueAt.toISOString(),
             resolved_at: null,
             video_url: null,
+            photo1_url: null,
+            photo2_url: null,
             med_name: m.med_name,
             patient_name: patientName,
             patient_phone: patientPhone,
@@ -99,6 +103,8 @@ function Page() {
           due_at: r.due_at,
           resolved_at: r.resolved_at,
           video_url: r.video_url,
+          photo1_url: r.photo1_url,
+          photo2_url: r.photo2_url,
           med_name: medName ?? "Medication",
           patient_name: patientName,
           patient_phone: patientPhone,
@@ -132,6 +138,10 @@ function Page() {
 
   const videoUrl = async (path: string) => {
     const { data } = await supabase.storage.from("med-videos").createSignedUrl(path, 60);
+    return data?.signedUrl ?? null;
+  };
+  const photoUrl = async (path: string) => {
+    const { data } = await supabase.storage.from("med-photos").createSignedUrl(path, 300);
     return data?.signedUrl ?? null;
   };
 
@@ -178,20 +188,7 @@ function Page() {
                   {t("alert_resolved")}
                 </div>
                 {history.slice(0, 20).map((a) => (
-                  <div
-                    key={a.id}
-                    className="bg-card rounded-xl p-3 mb-2 border border-border opacity-80"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-bold text-fs-sm truncate">{a.med_name}</div>
-                        <div className="text-fs-xs text-muted-foreground">{fmt(a.due_at)}</div>
-                      </div>
-                      <span className="bg-green-l text-green text-fs-xs font-bold px-2.5 py-1 rounded-full shrink-0">
-                        ✓ {a.status === "confirmed" ? "Taken" : t("alert_resolved")}
-                      </span>
-                    </div>
-                  </div>
+                  <HistoryCard key={a.id} a={a} fmt={fmt} photoUrl={photoUrl} t={t} />
                 ))}
               </div>
             )}
@@ -254,6 +251,61 @@ function ActiveCard({
           ✓ {t("alert_resolve")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function HistoryCard({
+  a, fmt, photoUrl, t,
+}: {
+  a: AlertRow;
+  fmt: (iso: string) => string;
+  photoUrl: (path: string) => Promise<string | null>;
+  t: (k: string) => string;
+}) {
+  const [thumb1, setThumb1] = useState<string | null>(null);
+  const [thumb2, setThumb2] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (a.photo1_url) {
+        const u = await photoUrl(a.photo1_url);
+        if (!cancelled) setThumb1(u);
+      }
+      if (a.photo2_url) {
+        const u = await photoUrl(a.photo2_url);
+        if (!cancelled) setThumb2(u);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [a.photo1_url, a.photo2_url, photoUrl]);
+
+  return (
+    <div className="bg-card rounded-xl p-3 mb-2 border border-border opacity-90">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-bold text-fs-sm truncate">{a.med_name}</div>
+          <div className="text-fs-xs text-muted-foreground">{fmt(a.due_at)}</div>
+        </div>
+        <span className="bg-green-l text-green text-fs-xs font-bold px-2.5 py-1 rounded-full shrink-0">
+          ✓ {a.status === "confirmed" ? "Taken" : t("alert_resolved")}
+        </span>
+      </div>
+      {(thumb1 || thumb2) && (
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {thumb1 && (
+            <a href={thumb1} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border bg-black">
+              <img src={thumb1} alt="Pill in hand" className="w-full h-full object-cover" />
+            </a>
+          )}
+          {thumb2 && (
+            <a href={thumb2} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border bg-black">
+              <img src={thumb2} alt="Empty hand" className="w-full h-full object-cover" />
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
