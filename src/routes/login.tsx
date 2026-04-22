@@ -41,10 +41,10 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // After auth resolves, route by DB role (single source of truth)
+  // Public guard: if already signed in, route by DB role (single source of truth)
   useEffect(() => {
     if (loading || !session || !profile) return;
-    if (!profile.role) return; // wait for role to load
+    if (!profile.role) return; // wait for role row to load
     navigate({ to: profile.role === "patient" ? "/my-meds" : "/dashboard" });
   }, [loading, session, profile, navigate]);
 
