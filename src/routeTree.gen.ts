@@ -22,6 +22,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPushVapidRouteImport } from './routes/api.push.vapid'
+import { Route as ApiPushOnConfirmRouteImport } from './routes/api.push.on-confirm'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -88,6 +89,11 @@ const ApiPushVapidRoute = ApiPushVapidRouteImport.update({
   path: '/api/push/vapid',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPushOnConfirmRoute = ApiPushOnConfirmRouteImport.update({
+  id: '/api/push/on-confirm',
+  path: '/api/push/on-confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/my-meds': typeof MyMedsRoute
   '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
+  '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/my-meds': typeof MyMedsRoute
   '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
+  '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
 }
 export interface FileRoutesById {
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/my-meds': typeof MyMedsRoute
   '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
+  '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/my-meds'
     | '/patient-dashboard'
     | '/settings'
+    | '/api/push/on-confirm'
     | '/api/push/vapid'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/my-meds'
     | '/patient-dashboard'
     | '/settings'
+    | '/api/push/on-confirm'
     | '/api/push/vapid'
   id:
     | '__root__'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/my-meds'
     | '/patient-dashboard'
     | '/settings'
+    | '/api/push/on-confirm'
     | '/api/push/vapid'
   fileRoutesById: FileRoutesById
 }
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   MyMedsRoute: typeof MyMedsRoute
   PatientDashboardRoute: typeof PatientDashboardRoute
   SettingsRoute: typeof SettingsRoute
+  ApiPushOnConfirmRoute: typeof ApiPushOnConfirmRoute
   ApiPushVapidRoute: typeof ApiPushVapidRoute
 }
 
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushVapidRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/push/on-confirm': {
+      id: '/api/push/on-confirm'
+      path: '/api/push/on-confirm'
+      fullPath: '/api/push/on-confirm'
+      preLoaderRoute: typeof ApiPushOnConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyMedsRoute: MyMedsRoute,
   PatientDashboardRoute: PatientDashboardRoute,
   SettingsRoute: SettingsRoute,
+  ApiPushOnConfirmRoute: ApiPushOnConfirmRoute,
   ApiPushVapidRoute: ApiPushVapidRoute,
 }
 export const routeTree = rootRouteImport
