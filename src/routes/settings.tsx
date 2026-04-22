@@ -28,7 +28,7 @@ function SettingsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !session) navigate({ to: "/login" });
+    if (!loading && !session) navigate({ to: "/" });
   }, [loading, session, navigate]);
 
   if (!profile) {
@@ -43,6 +43,7 @@ function SettingsPage() {
     <AppShell title={t("settings_title")}>
       <div className="flex-1 px-4 pt-4 pb-24 space-y-5">
         <ProfileCard onSaved={refresh} />
+        <EmailCard />
         <PasswordCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
       </div>
@@ -80,11 +81,55 @@ function ProfileCard({ onSaved }: { onSaved: () => Promise<void> }) {
       <Field label={t("settings_phone")}>
         <input value={phone ?? ""} onChange={(e) => setPhone(e.target.value)} className={inp} placeholder="+60 11-2345 6789" />
       </Field>
-      <Field label={t("settings_email")}>
-        <input value="" disabled className={`${inp} opacity-60`} placeholder={t("settings_email_locked")} />
-      </Field>
       <button onClick={save} disabled={busy} className="w-full bg-green text-white font-bold py-3 rounded-xl mt-2 disabled:opacity-50">
         {busy ? t("settings_saving") : t("settings_save_profile")}
+      </button>
+    </section>
+  );
+}
+
+function EmailCard() {
+  const t = useT_hook();
+  const { user } = useAuth();
+  const currentEmail = user?.email ?? "";
+  const [email, setEmail] = useState(currentEmail);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setEmail(currentEmail);
+  }, [currentEmail]);
+
+  const save = async () => {
+    const trimmed = email.trim();
+    const ok = z.string().email().safeParse(trimmed);
+    if (!ok.success) return toast.error("Invalid email");
+    if (trimmed === currentEmail) return;
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(t("settings_email_updated"));
+  };
+
+  return (
+    <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
+      <div className="font-extrabold text-fs-sm mb-3">{t("settings_email")}</div>
+      <Field label={t("settings_email")}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={inp}
+          placeholder="you@example.com"
+          autoComplete="email"
+        />
+      </Field>
+      <button
+        onClick={save}
+        disabled={busy || !email || email === currentEmail}
+        className="w-full bg-green text-white font-bold py-3 rounded-xl mt-2 disabled:opacity-50"
+      >
+        {busy ? t("settings_saving") : t("settings_update_email")}
       </button>
     </section>
   );

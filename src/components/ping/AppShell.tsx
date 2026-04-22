@@ -4,7 +4,15 @@ import { useEffect } from "react";
 import { usePingStore, initials, useT_hook } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 
-export function AppShell({ title, children }: { title?: string; children: ReactNode }) {
+export function AppShell({
+  title,
+  children,
+  showTabs = true,
+}: {
+  title?: string;
+  children: ReactNode;
+  showTabs?: boolean;
+}) {
   const router = useRouter();
   const navigate = useNavigate();
   const t = useT_hook();
@@ -83,7 +91,7 @@ export function AppShell({ title, children }: { title?: string; children: ReactN
 
       {children}
 
-      {profile && <BottomTabs />}
+      {profile && showTabs && <BottomTabs />}
       <UndoToast />
     </div>
   );

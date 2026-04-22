@@ -35,7 +35,7 @@ export function useRoleGuard(currentPath: string) {
   useEffect(() => {
     if (loading) return;
     if (!session) {
-      navigate({ to: "/login" });
+      navigate({ to: "/" });
       return;
     }
     if (!profile?.role) return;
