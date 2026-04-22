@@ -8,6 +8,9 @@ import { usePatients } from "@/lib/patientContext";
 import { PatientSwitcher } from "@/components/ping/PatientSwitcher";
 import { useRoleGuard } from "@/lib/roleGuard";
 import { useLocation } from "@tanstack/react-router";
+import { exportAdherencePdf } from "@/lib/pdfExport";
+import { toast } from "sonner";
+import { subscribeUserToPush } from "@/lib/push";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -30,10 +33,18 @@ function Dashboard() {
 
   const [meds, setMeds] = useState<MedRow[]>([]);
   const [medsLoading, setMedsLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/login" });
   }, [loading, session, navigate]);
+
+  // Caregiver opts into background push once dashboard is reachable.
+  useEffect(() => {
+    if (session?.user?.id) {
+      subscribeUserToPush(session.user.id).catch(() => {});
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!patientId) {
@@ -59,10 +70,37 @@ function Dashboard() {
     return Math.floor(m.remaining_qty / d) <= m.refill_reminder_days;
   });
 
+  const handleExport = async () => {
+    if (!selected) return;
+    setExporting(true);
+    try {
+      await exportAdherencePdf({
+        patientId: selected.id,
+        patientName: selected.full_name,
+        patientAge: selected.age ?? null,
+      });
+      toast.success("Report downloaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <AppShell title="Ping.">
       <div className="flex-1 px-4 pt-3.5 pb-24">
         <PatientSwitcher />
+
+        {patientId && (
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full mb-3.5 bg-card border-2 border-green text-green font-extrabold text-fs-sm py-3 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform disabled:opacity-60"
+          >
+            {exporting ? "Generating…" : "📄 Export 30-Day Adherence Report"}
+          </button>
+        )}
 
         {lowStock.length > 0 && (
           <div className="bg-amber-l border border-amber rounded-xl p-3.5 mb-3.5 flex items-center gap-3">
