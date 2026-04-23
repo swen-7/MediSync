@@ -32,7 +32,7 @@ function Landing() {
   // Auth guard: if already signed in, push to the right dashboard
   useEffect(() => {
     if (loading || !session || !profile?.role) return;
-    navigate({ to: profile.role === "patient" ? "/my-meds" : "/dashboard" });
+    navigate({ to: profile.role === "patient" ? "/my-meds" : "/dashboard", replace: true });
   }, [loading, session, profile?.role, navigate]);
 
   const goLogin = (role: "supervisor" | "elderly") => {
@@ -40,6 +40,13 @@ function Landing() {
     setLoginMode("login");
     navigate({ to: "/login" });
   };
+
+  // Gatekeeper: never render the public landing UI when a session exists.
+  // While loading, or while we have any session, render an empty shell so
+  // the redirect effect (or AuthRedirector) takes over without flashing.
+  if (loading || session) {
+    return <AppShell showTabs={false}><div /></AppShell>;
+  }
 
   return (
     <AppShell showTabs={false}>

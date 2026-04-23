@@ -107,17 +107,23 @@ export function DueTakeover({
 
       // 4. fire push side-effects (low-stock + patient affirmation)
       try {
-        await fetch("/api/push/on-confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            patientId: profile.id,
-            medicationId: med.id,
-            medName: med.med_name,
-            patientName: profile.full_name,
-            remainingQty: newQty,
-          }),
-        });
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await fetch("/api/push/on-confirm", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              patientId: profile.id,
+              medicationId: med.id,
+              medName: med.med_name,
+              patientName: profile.full_name,
+              remainingQty: newQty,
+            }),
+          });
+        }
       } catch {
         /* push failures are non-blocking */
       }
