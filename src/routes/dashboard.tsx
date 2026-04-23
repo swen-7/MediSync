@@ -92,16 +92,6 @@ function Dashboard() {
       <div className="flex-1 px-4 pt-3.5 pb-24">
         <PatientSwitcher />
 
-        {patientId && (
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="w-full mb-3.5 bg-card border-2 border-green text-green font-extrabold text-fs-sm py-3 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform disabled:opacity-60"
-          >
-            {exporting ? "Generating…" : "📄 Export 30-Day Adherence Report"}
-          </button>
-        )}
-
         {lowStock.length > 0 && (
           <div className="bg-amber-l border border-amber rounded-xl p-3.5 mb-3.5 flex items-center gap-3">
             <div className="text-lg">💊</div>
@@ -164,6 +154,16 @@ function Dashboard() {
         >
           {t("emergency_999")}
         </a>
+
+        {patientId && (
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full mt-6 bg-card border-2 border-green text-green font-extrabold text-fs-sm py-3 rounded-2xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform disabled:opacity-60"
+          >
+            {exporting ? "Generating…" : `📄 ${t("pdf_export_button")}`}
+          </button>
+        )}
       </div>
     </AppShell>
   );
