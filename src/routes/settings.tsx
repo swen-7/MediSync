@@ -222,6 +222,161 @@ function PatientPrefsCard({ patientId }: { patientId: string }) {
   );
 }
 
+function LinkAccountCard() {
+  const t = useT_hook();
+  const { profile } = useAuth();
+  if (!profile) return null;
+  return (
+    <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
+      <div className="font-extrabold text-fs-sm mb-3">{t("link_tab")}</div>
+      {profile.role === "patient" ? <LinkPatientInner /> : <LinkCaregiverInner />}
+    </section>
+  );
+}
+
+function LinkPatientInner() {
+  const t = useT_hook();
+  const { profile } = useAuth();
+  const code = profile?.invite_code ?? "------";
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success(t("link_copied"));
+    } catch {
+      toast.error(t("link_copy_failed"));
+    }
+  };
+  return (
+    <div>
+      <p className="text-fs-xs text-muted-foreground mb-3">{t("link_invite_sub")}</p>
+      <div className="bg-input-bg rounded-xl p-4 text-center mb-2">
+        <div className="text-fs-xs uppercase tracking-wider text-hint font-bold mb-1">{t("link_code")}</div>
+        <div className="font-display text-[2.2rem] font-semibold tracking-[0.35rem] text-green leading-none">
+          {code}
+        </div>
+      </div>
+      <button onClick={copy} className="w-full bg-green-l text-green font-bold py-2.5 rounded-xl text-fs-sm">
+        {t("link_copy")}
+      </button>
+    </div>
+  );
+}
+
+function LinkCaregiverInner() {
+  const t = useT_hook();
+  const { patients, refresh, setSelectedId } = usePatients();
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [ageDrafts, setAgeDrafts] = useState<Record<string, string>>({});
+  const [savingAge, setSavingAge] = useState<string | null>(null);
+
+  const submit = async () => {
+    const cleaned = code.replace(/\D/g, "").slice(0, 6);
+    if (cleaned.length !== 6) return toast.error(t("link_enter_code"));
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("redeem_invite_code", { _code: cleaned });
+      if (error) throw error;
+      toast.success(t("link_patient_linked"));
+      setCode("");
+      await refresh();
+      if (data) setSelectedId(data as string);
+    } catch (e: any) {
+      toast.error(e?.message?.includes("Invalid") ? t("link_invalid") : e?.message ?? t("link_failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const unlink = async (id: string, name: string) => {
+    if (!confirm(`${t("link_unlink_confirm")} ${name}?`)) return;
+    const { error } = await supabase.from("patients_caregivers").delete().eq("patient_id", id);
+    if (error) return toast.error(error.message);
+    toast.success(t("link_unlinked"));
+    await refresh();
+  };
+
+  const saveAge = async (patientId: string) => {
+    const raw = ageDrafts[patientId]?.trim();
+    if (!raw) return;
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 0 || n > 130) return toast.error(t("link_age_invalid"));
+    setSavingAge(patientId);
+    const { error } = await supabase.from("profiles").update({ age: n }).eq("id", patientId);
+    setSavingAge(null);
+    if (error) return toast.error(error.message);
+    toast.success(t("link_age_saved"));
+    setAgeDrafts((d) => ({ ...d, [patientId]: "" }));
+    await refresh();
+  };
+
+  return (
+    <div>
+      <p className="text-fs-xs text-muted-foreground mb-3">{t("link_caregiver_sub")}</p>
+      <input
+        inputMode="numeric"
+        maxLength={6}
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+        placeholder="000000"
+        className="w-full bg-input-bg border border-border rounded-xl px-3 py-3 text-center font-display text-fs-lg font-semibold tracking-[0.3rem]"
+      />
+      <button
+        onClick={submit}
+        disabled={busy || code.length !== 6}
+        className="w-full mt-2 bg-green text-white font-bold py-2.5 rounded-xl disabled:opacity-50 text-fs-sm"
+      >
+        {busy ? t("link_linking") : t("link_link_btn")}
+      </button>
+
+      <div className="font-extrabold text-fs-xs mt-4 mb-2 uppercase tracking-wider text-muted-foreground">
+        {t("link_linked_patients")} ({patients.length})
+      </div>
+      {patients.length === 0 ? (
+        <div className="text-fs-xs text-muted-foreground text-center py-3">{t("link_no_patients")}</div>
+      ) : (
+        patients.map((p) => (
+          <div key={p.id} className="border border-border rounded-xl p-3 mb-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="font-bold text-fs-sm truncate">{p.full_name}</div>
+                <div className="text-fs-xs text-muted-foreground">
+                  {t("link_age_label")}: {p.age ?? "—"}
+                </div>
+              </div>
+              <button
+                onClick={() => unlink(p.id, p.full_name)}
+                className="text-red text-fs-xs font-bold px-2 py-1 rounded-lg hover:bg-red-l shrink-0"
+              >
+                {t("link_unlink")}
+              </button>
+            </div>
+            <div className="mt-2 flex gap-2">
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={130}
+                value={ageDrafts[p.id] ?? ""}
+                onChange={(e) => setAgeDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                placeholder={t("link_age_placeholder")}
+                className="flex-1 bg-input-bg border border-border rounded-lg px-2 py-1.5 text-fs-xs"
+              />
+              <button
+                onClick={() => saveAge(p.id)}
+                disabled={savingAge === p.id || !ageDrafts[p.id]}
+                className="bg-green text-white font-bold text-fs-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
+              >
+                {savingAge === p.id ? "…" : t("link_age_save")}
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 const inp = "w-full bg-input-bg border border-border rounded-xl px-3 py-2.5 text-fs-sm";
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
