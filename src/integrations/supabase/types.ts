@@ -303,6 +303,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_my_profile: {
+        Args: { _role?: Database["public"]["Enums"]["app_role"] }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
