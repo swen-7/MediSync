@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { buildVapidAuthHeader, encryptPushPayload } from "@/lib/webPushSign";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Called when a patient confirms a medication. Side-effects:
@@ -63,11 +64,49 @@ export const Route = createFileRoute("/api/push/on-confirm")({
           return Response.json({ ok: false, error: "vapid not configured" }, { status: 500 });
         }
 
+        // ---- AUTH GUARD ---------------------------------------------------
+        const authHeader = request.headers.get("authorization") ?? request.headers.get("Authorization");
+        if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+          return Response.json({ ok: false, error: "missing bearer token" }, { status: 401 });
+        }
+        const token = authHeader.slice(7).trim();
+        if (!token) {
+          return Response.json({ ok: false, error: "missing token" }, { status: 401 });
+        }
+        const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
+        const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
+        if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+          return Response.json({ ok: false, error: "auth not configured" }, { status: 500 });
+        }
+        const userClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data: userData, error: userErr } = await userClient.auth.getUser();
+        if (userErr || !userData?.user) {
+          return Response.json({ ok: false, error: "invalid token" }, { status: 403 });
+        }
+        const callerId = userData.user.id;
+        // ------------------------------------------------------------------
+
         let parsed: z.infer<typeof Body>;
         try {
           parsed = Body.parse(await request.json());
         } catch (e) {
           return Response.json({ ok: false, error: "invalid body" }, { status: 400 });
+        }
+
+        // Authorize: caller must be the patient themselves OR a linked caregiver.
+        if (callerId !== parsed.patientId) {
+          const { data: link } = await supabaseAdmin
+            .from("patients_caregivers")
+            .select("id")
+            .eq("patient_id", parsed.patientId)
+            .eq("caregiver_id", callerId)
+            .maybeSingle();
+          if (!link) {
+            return Response.json({ ok: false, error: "forbidden" }, { status: 403 });
+          }
         }
 
         const vapid = { pub: VAPID_PUBLIC_KEY, priv: VAPID_PRIVATE_KEY, sub: VAPID_SUBJECT };
