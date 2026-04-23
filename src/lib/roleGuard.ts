@@ -11,10 +11,9 @@ import { useAuth } from "@/integrations/supabase/auth-provider";
 
 const PATIENT_ALLOWED = new Set([
   "/my-meds",
+  "/calendar",
   "/clinics",
-  "/link",
   "/settings",
-  "/alerts",
 ]);
 
 const CAREGIVER_ALLOWED = new Set([
@@ -22,7 +21,6 @@ const CAREGIVER_ALLOWED = new Set([
   "/medications",
   "/alerts",
   "/clinics",
-  "/link",
   "/settings",
   "/calendar",
   "/history",

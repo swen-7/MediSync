@@ -1,7 +1,8 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
-import { AuthProvider } from "@/integrations/supabase/auth-provider";
+import { AuthProvider, useAuth } from "@/integrations/supabase/auth-provider";
 import { PatientProvider } from "@/lib/patientContext";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -88,9 +89,34 @@ function RootComponent() {
   return (
     <AuthProvider>
       <PatientProvider>
+        <AuthRedirector />
         <Outlet />
         <Toaster position="top-center" richColors />
       </PatientProvider>
     </AuthProvider>
   );
+}
+
+/**
+ * Global auth observer: whenever a session exists, force-redirect away from
+ * the public landing (/) and /login to the role's dashboard. Database role
+ * is the single source of truth.
+ */
+function AuthRedirector() {
+  const { session, profile, loading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session) return;
+    if (!profile?.role) return;
+    const path = location.pathname;
+    if (path === "/" || path === "/login") {
+      const target = profile.role === "patient" ? "/my-meds" : "/dashboard";
+      navigate({ to: target, replace: true });
+    }
+  }, [loading, session, profile?.role, location.pathname, navigate]);
+
+  return null;
 }

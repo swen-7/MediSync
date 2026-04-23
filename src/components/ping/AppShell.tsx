@@ -34,6 +34,8 @@ export function AppShell({
   };
 
   const goSettings = () => navigate({ to: "/settings" });
+  const goAlerts = () => navigate({ to: "/alerts" });
+  const isCaregiver = profile?.role === "caregiver";
 
   return (
     <div className="min-h-screen flex flex-col max-w-[480px] mx-auto bg-background relative">
@@ -68,6 +70,16 @@ export function AppShell({
           >
             {theme === "light" ? t("dark") : t("light")}
           </button>
+          {profile && isCaregiver && (
+            <button
+              onClick={goAlerts}
+              title="Alerts"
+              aria-label="Alerts"
+              className="text-muted-foreground text-base px-2 py-1.5 rounded-lg hover:bg-amber-l hover:text-amber transition-colors"
+            >
+              🔔
+            </button>
+          )}
           {profile && (
             <>
               <button
@@ -105,15 +117,15 @@ function BottomTabs() {
 
   const supTabs = [
     { to: "/dashboard", icon: "🏠", lbl: t("home_tab") },
-    { to: "/medications", icon: "💊", lbl: t("meds_tab") },
-    { to: "/alerts", icon: "🔔", lbl: t("alerts_tab") },
+    { to: "/calendar", icon: "📅", lbl: t("calendar_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
+    { to: "/history", icon: "📋", lbl: t("history_tab") },
     { to: "/settings", icon: "⚙️", lbl: t("settings_tab") },
   ];
   const eldTabs = [
     { to: "/my-meds", icon: "💊", lbl: t("my_meds") },
+    { to: "/calendar", icon: "📅", lbl: t("calendar_tab") },
     { to: "/clinics", icon: "🏥", lbl: t("clinics_tab") },
-    { to: "/link", icon: "🔗", lbl: t("link_tab") },
     { to: "/settings", icon: "⚙️", lbl: t("settings_tab") },
   ];
   const tabs = profile.role === "patient" ? eldTabs : supTabs;
