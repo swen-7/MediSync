@@ -29,10 +29,15 @@ function Landing() {
   const navigate = useNavigate();
   const { profile, session, loading } = useAuth();
 
-  // Auth guard: if already signed in, push to the right dashboard
+  // Auth guard: if a session exists, redirect to the role's dashboard the
+  // moment we know the role. Patients use the /patient-dashboard alias per spec.
   useEffect(() => {
-    if (loading || !session || !profile?.role) return;
-    navigate({ to: profile.role === "patient" ? "/my-meds" : "/dashboard", replace: true });
+    if (loading || !session) return;
+    if (!profile?.role) return;
+    navigate({
+      to: profile.role === "patient" ? "/patient-dashboard" : "/dashboard",
+      replace: true,
+    });
   }, [loading, session, profile?.role, navigate]);
 
   const goLogin = (role: "supervisor" | "elderly") => {
@@ -42,10 +47,16 @@ function Landing() {
   };
 
   // Gatekeeper: never render the public landing UI when a session exists.
-  // While loading, or while we have any session, render an empty shell so
-  // the redirect effect (or AuthRedirector) takes over without flashing.
+  // Show a small spinner so the user sees progress while role loads.
   if (loading || session) {
-    return <AppShell showTabs={false}><div /></AppShell>;
+    return (
+      <AppShell showTabs={false}>
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <div className="w-10 h-10 border-4 border-green border-t-transparent rounded-full animate-spin" />
+          <div className="text-fs-sm text-muted-foreground">Loading…</div>
+        </div>
+      </AppShell>
+    );
   }
 
   return (

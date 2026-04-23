@@ -113,7 +113,7 @@ function AuthRedirector() {
     if (!profile?.role) return;
     const path = location.pathname;
     if (path === "/" || path === "/login") {
-      const target = profile.role === "patient" ? "/my-meds" : "/dashboard";
+      const target = profile.role === "patient" ? "/patient-dashboard" : "/dashboard";
       navigate({ to: target, replace: true });
     }
   }, [loading, session, profile?.role, location.pathname, navigate]);
