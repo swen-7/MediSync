@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useT_hook } from "@/store/usePingStore";
+import { usePatients } from "@/lib/patientContext";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -45,6 +46,7 @@ function SettingsPage() {
         <ProfileCard onSaved={refresh} />
         <EmailCard />
         <PasswordCard />
+        <LinkAccountCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
       </div>
     </AppShell>
