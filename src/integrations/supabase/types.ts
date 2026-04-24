@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          event_date: string
+          id: string
+          patient_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          event_date: string
+          id?: string
+          patient_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          event_date?: string
+          id?: string
+          patient_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medication_logs: {
         Row: {
           confirmed_at: string | null
@@ -26,7 +56,7 @@ export type Database = {
           photo1_url: string | null
           photo2_url: string | null
           resolved_at: string | null
-          resolved_by_caregiver_id: string | null
+          resolved_by_supervisor_id: string | null
           status: Database["public"]["Enums"]["log_status"]
           updated_at: string
           video_url: string | null
@@ -42,7 +72,7 @@ export type Database = {
           photo1_url?: string | null
           photo2_url?: string | null
           resolved_at?: string | null
-          resolved_by_caregiver_id?: string | null
+          resolved_by_supervisor_id?: string | null
           status?: Database["public"]["Enums"]["log_status"]
           updated_at?: string
           video_url?: string | null
@@ -58,7 +88,7 @@ export type Database = {
           photo1_url?: string | null
           photo2_url?: string | null
           resolved_at?: string | null
-          resolved_by_caregiver_id?: string | null
+          resolved_by_supervisor_id?: string | null
           status?: Database["public"]["Enums"]["log_status"]
           updated_at?: string
           video_url?: string | null
@@ -151,24 +181,24 @@ export type Database = {
         }
         Relationships: []
       }
-      patients_caregivers: {
+      patients_supervisors: {
         Row: {
-          caregiver_id: string
           id: string
           linked_at: string
           patient_id: string
+          supervisor_id: string
         }
         Insert: {
-          caregiver_id: string
           id?: string
           linked_at?: string
           patient_id: string
+          supervisor_id: string
         }
         Update: {
-          caregiver_id?: string
           id?: string
           linked_at?: string
           patient_id?: string
+          supervisor_id?: string
         }
         Relationships: []
       }
@@ -307,6 +337,10 @@ export type Database = {
         Args: { _role?: Database["public"]["Enums"]["app_role"] }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      factory_reset_patient_data: {
+        Args: { _patient_id: string }
+        Returns: undefined
+      }
       generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -315,11 +349,11 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_linked_caregiver: { Args: { _patient_id: string }; Returns: boolean }
+      is_linked_supervisor: { Args: { _patient_id: string }; Returns: boolean }
       redeem_invite_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
-      app_role: "caregiver" | "patient"
+      app_role: "supervisor" | "patient"
       lang_code: "en" | "ms" | "zh"
       log_status: "confirmed" | "missed" | "pending"
     }
@@ -449,7 +483,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["caregiver", "patient"],
+      app_role: ["supervisor", "patient"],
       lang_code: ["en", "ms", "zh"],
       log_status: ["confirmed", "missed", "pending"],
     },
