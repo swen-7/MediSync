@@ -295,6 +295,17 @@ function Page() {
           onResolved={() => setReload((r) => r + 1)}
         />
       )}
+
+      {showAddMed && profile?.id && (
+        <AddMedModal
+          patientId={profile.id}
+          onClose={() => setShowAddMed(false)}
+          onSaved={() => {
+            setShowAddMed(false);
+            setReload((r) => r + 1);
+          }}
+        />
+      )}
     </AppShell>
   );
 }
