@@ -3,12 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 
 /**
- * Caregiver-side: which linked patient is the caregiver currently viewing?
+ * Supervisor-side: which linked patient is the supervisor currently viewing?
  * Patient-side: this provider isn't used — patients always operate on auth.uid().
  *
- * Linked patients are read via the `patients_caregivers` join table; we then
- * fetch matching profile rows in a single query (RLS allows caregivers to
- * see linked patient profiles via `is_linked_caregiver`).
+ * Linked patients are read via the `patients_supervisors` join table; we then
+ * fetch matching profile rows in a single query (RLS allows supervisors to
+ * see linked patient profiles via `is_linked_supervisor`).
  */
 export interface LinkedPatient {
   id: string;
@@ -45,16 +45,16 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   const [selectedId, setSelectedIdState] = useState<string | null>(null);
 
   const load = async () => {
-    if (!profile || profile.role !== "caregiver") {
+    if (!profile || profile.role !== "supervisor") {
       setPatients([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     const { data: links } = await supabase
-      .from("patients_caregivers")
+      .from("patients_supervisors")
       .select("patient_id")
-      .eq("caregiver_id", profile.id);
+      .eq("supervisor_id", profile.id);
     const ids = (links ?? []).map((l) => l.patient_id);
     if (ids.length === 0) {
       setPatients([]);
