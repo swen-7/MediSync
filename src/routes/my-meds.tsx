@@ -295,7 +295,7 @@ function Page() {
   );
 }
 
-function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
+function VitalCard({ v }: { v: DbVital }) {
   const t = useT_hook();
   const bp = bpCategory(v.blood_pressure_sys, v.blood_pressure_dia);
   const gl = glucoseCategory(v.blood_glucose);
