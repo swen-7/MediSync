@@ -48,6 +48,7 @@ function SettingsPage() {
         <PasswordCard />
         <LinkAccountCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
+        {profile.role === "supervisor" && <DeveloperResetCard />}
       </div>
     </AppShell>
   );
