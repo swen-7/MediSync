@@ -169,6 +169,8 @@ function Page() {
     return Math.floor(m.remaining_qty / d) <= m.refill_reminder_days;
   });
 
+  const [showAddMed, setShowAddMed] = useState(false);
+
   return (
     <AppShell title={t("my_meds")}>
       <div className="flex-1 px-4 pt-4 pb-24">
@@ -197,7 +199,15 @@ function Page() {
           </button>
         </div>
 
-        <div className="font-extrabold text-fs-sm mb-2.5">{t("medications")}</div>
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="font-extrabold text-fs-sm">{t("medications")}</div>
+          <button
+            onClick={() => setShowAddMed(true)}
+            className="text-green text-fs-xs font-bold bg-transparent border-none px-2 py-1 rounded-lg hover:bg-green-l"
+          >
+            + {t("meds_add")}
+          </button>
+        </div>
         {lowStock.length > 0 && (
           <div className="bg-amber-l border border-amber rounded-xl p-3 mb-2.5 text-fs-xs font-bold text-amber">
             ⚠ {t("refill_warning")} {lowStock.map((m) => m.med_name).join(", ")}
