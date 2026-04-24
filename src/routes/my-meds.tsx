@@ -438,3 +438,91 @@ function AddVitalModal({
     </div>
   );
 }
+
+function AddMedModal({
+  patientId,
+  onClose,
+  onSaved,
+}: {
+  patientId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const t = useT_hook();
+  const [name, setName] = useState("");
+  const [dosage, setDosage] = useState("");
+  const [frequency, setFrequency] = useState("Once daily");
+  const [time, setTime] = useState("08:00");
+  const [qty, setQty] = useState("30");
+  const [busy, setBusy] = useState(false);
+
+  const valid = name.trim().length > 0 && Number(qty) > 0;
+
+  const save = async () => {
+    if (!valid) return;
+    setBusy(true);
+    const total = Math.max(1, parseInt(qty, 10));
+    const { error } = await supabase.from("medications").insert({
+      patient_id: patientId,
+      med_name: name.trim(),
+      dosage: dosage.trim(),
+      frequency,
+      scheduled_time: time.length === 5 ? `${time}:00` : time,
+      total_qty: total,
+      remaining_qty: total,
+      active: true,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Medication added");
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[400] flex items-end justify-center" onClick={onClose}>
+      <div className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+        <div className="font-display text-fs-xl font-semibold mb-4">{t("meds_add")}</div>
+
+        <label className="block mb-3">
+          <span className="text-fs-xs font-bold text-muted-foreground">Name</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" placeholder="e.g. Amlodipine 5mg" />
+        </label>
+
+        <label className="block mb-3">
+          <span className="text-fs-xs font-bold text-muted-foreground">Dosage</span>
+          <input value={dosage} onChange={(e) => setDosage(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" placeholder="e.g. 1 tablet" />
+        </label>
+
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <label className="block">
+            <span className="text-fs-xs font-bold text-muted-foreground">Frequency</span>
+            <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5">
+              <option>Once daily</option>
+              <option>Twice daily</option>
+              <option>Three times daily</option>
+              <option>Four times daily</option>
+              <option>As needed</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-fs-xs font-bold text-muted-foreground">Time</span>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
+          </label>
+        </div>
+
+        <label className="block mb-4">
+          <span className="text-fs-xs font-bold text-muted-foreground">Quantity (pills)</span>
+          <input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
+        </label>
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 bg-input-bg text-foreground font-bold py-3 rounded-xl">{t("cancel")}</button>
+          <button disabled={!valid || busy} onClick={save} className="flex-1 bg-green text-white font-bold py-3 rounded-xl disabled:opacity-50">
+            {busy ? "Saving…" : t("save_event").replace("event", "medication") || "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
