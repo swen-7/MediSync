@@ -16,7 +16,7 @@ export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — Ping" },
-      { name: "description", content: "Caregiver dashboard: monitor your loved ones' medication adherence in real time." },
+      { name: "description", content: "Supervisor dashboard: monitor your loved ones' medication adherence in real time." },
     ],
   }),
   component: Dashboard,
@@ -39,7 +39,7 @@ function Dashboard() {
     if (!loading && !session) navigate({ to: "/login" });
   }, [loading, session, navigate]);
 
-  // Caregiver opts into background push once dashboard is reachable.
+  // Supervisor opts into background push once dashboard is reachable.
   useEffect(() => {
     if (session?.user?.id) {
       subscribeUserToPush(session.user.id).catch(() => {});

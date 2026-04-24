@@ -40,7 +40,7 @@ function LoginPage() {
   const isSU = mode === "signup";
 
   // Signup-only state
-  const [role, setRole] = useState<AppRole>("caregiver");
+  const [role, setRole] = useState<AppRole>("supervisor");
   const [fullName, setFullName] = useState("");
 
   const [email, setEmail] = useState("");
@@ -166,7 +166,7 @@ function LoginPage() {
             {/* Role toggle ONLY visible during signup. */}
             {isSU && (
               <div className="flex gap-2 mb-4">
-                {(["caregiver", "patient"] as const).map((r) => (
+                {(["supervisor", "patient"] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRole(r)}
@@ -176,8 +176,8 @@ function LoginPage() {
                         : "border-border bg-card text-muted-foreground"
                     }`}
                   >
-                    {r === "caregiver" ? "👨‍👩‍👧 " : "👴 "}
-                    {r === "caregiver" ? t("supervisor") : t("elderly")}
+                    {r === "supervisor" ? "👨‍👩‍👧 " : "👴 "}
+                    {r === "supervisor" ? t("supervisor") : t("elderly")}
                   </button>
                 ))}
               </div>

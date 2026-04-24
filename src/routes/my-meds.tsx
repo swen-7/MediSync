@@ -88,7 +88,7 @@ function Page() {
   const [loggedToday, setLoggedToday] = useState<Set<string>>(new Set());
   const [now, setNow] = useState<Date>(() => new Date());
   const [reload, setReload] = useState(0);
-  const [caregiverPhone, setCaregiverPhone] = useState<string>("");
+  const [supervisorPhone, setSupervisorPhone] = useState<string>("");
   const [vitals, setVitals] = useState<DbVital[]>([]);
   const [streak, setStreak] = useState(0);
   const [streakDoneToday, setStreakDoneToday] = useState(false);
@@ -120,7 +120,7 @@ function Page() {
       setMeds((medsData ?? []) as MyMed[]);
       setLoggedToday(new Set((logsData ?? []).map((l) => l.medication_id)));
       setVitals((vitalsData ?? []) as DbVital[]);
-      setCaregiverPhone(settings?.caregiver_phone ?? "");
+      setSupervisorPhone(settings?.caregiver_phone ?? "");
       setLoading(false);
 
       // Streak evaluation runs in background after page load
@@ -158,7 +158,7 @@ function Page() {
     return best;
   })();
 
-  const waNumber = sanitizeForWhatsApp(caregiverPhone);
+  const waNumber = sanitizeForWhatsApp(supervisorPhone);
   const waUrl = `https://wa.me/${waNumber}`;
   const openWa = () => window.open(waUrl, "_blank", "noopener,noreferrer");
   const [showVitals, setShowVitals] = useState(false);
