@@ -85,7 +85,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     alert_resolved: "Resolved",
     alert_overdue: "overdue",
     emergency_999: "🚨 Emergency 999",
-    contact_caregiver: "💬 Contact Caregiver",
+    contact_caregiver: "💬 Contact Supervisor",
     // Vitals
     vitals_title: "Vitals",
     vitals_bp: "Blood Pressure",
@@ -178,7 +178,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     settings_password_min: "Password must be at least 6 characters",
     settings_password_mismatch: "Passwords do not match",
     settings_patient_prefs: "Patient preferences",
-    settings_caregiver_phone: "Caregiver WhatsApp number",
+    settings_caregiver_phone: "Supervisor WhatsApp number",
     settings_in_app: "In-app reminders",
     settings_affirmations: "Affirmation messages",
     settings_save_prefs: "Save preferences",

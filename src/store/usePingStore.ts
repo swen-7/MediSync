@@ -132,54 +132,18 @@ export const usePingStore = create<PingState>((set, get) => ({
   user: null,
   loginRole: "supervisor",
   loginMode: "login",
-  elders: [
-    {
-      id: 1, name: "Grandma Rose", age: 74, phone: "011-2345678", email: "rose@email.com",
-      timezone: "Asia/Kuala_Lumpur", status: "confirmed", pdpaConsent: true,
-      medications: [
-        { id: 1, name: "Amlodipine 5mg", dosage: "5mg", freq: "Once daily", time: "08:00",
-          customDays: [], totalQty: 30, remainingQty: 8, refillAlertDays: 7, pillImg: null, unit: "pills" },
-        { id: 2, name: "Metformin 500mg", dosage: "500mg", freq: "Twice daily", time: "08:00",
-          customDays: [], totalQty: 60, remainingQty: 52, refillAlertDays: 7, pillImg: null, unit: "pills" },
-      ],
-    },
-    {
-      id: 2, name: "Uncle David", age: 68, phone: "011-9876543", email: "david@email.com",
-      timezone: "Asia/Kuala_Lumpur", status: "pending", pdpaConsent: true,
-      medications: [
-        { id: 3, name: "Atenolol 50mg", dosage: "50mg", freq: "Once daily", time: "09:00",
-          customDays: [], totalQty: 30, remainingQty: 28, refillAlertDays: 7, pillImg: null, unit: "pills" },
-      ],
-    },
-  ],
-  alerts: [
-    { id: 1, elderName: "Uncle David", elderMed: "Atenolol 50mg",
-      time: "09:00 AM", ago: "1h 24m", resolved: false },
-  ],
-  hist7: ["confirmed", "confirmed", "missed", "confirmed", "confirmed", "pending", "pending"],
-  supervisorRates: [
-    { name: "Sarah Tan", rate: 88 },
-    { name: "Michael Tan", rate: 62 },
-    { name: "Priya Singh", rate: 41 },
-    { name: "James Lim", rate: 79 },
-  ],
+  elders: [],
+  alerts: [],
+  hist7: [],
+  supervisorRates: [],
   undoToast: null,
 
   calViewDate: new Date(),
   calSelDate: null,
-  calEvents: [
-    { id: 1, date: "2026-04-22", title: "Grandma Rose — Cardiologist", type: "doc", elder: "Grandma Rose", color: "#1890a0" },
-    { id: 2, date: "2026-04-28", title: "Amlodipine 5mg expires", type: "medexp", elder: "Grandma Rose", color: "#e05555" },
-    { id: 3, date: "2026-05-05", title: "Uncle David — Cardiology follow-up", type: "doc", elder: "Uncle David", color: "#1890a0" },
-    { id: 4, date: "2026-04-26", title: "Amlodipine 5mg — Refill reminder", type: "med_schedule", elder: "Grandma Rose", color: "#2a9d6e" },
-  ],
+  calEvents: [],
 
   caregiverPhone: "+60 11-2345 6789",
-  vitals: [
-    { id: 1, systolic: 128, diastolic: 82, pulse: 72, takenAt: "2026-04-19T08:15:00", note: "Before breakfast" },
-    { id: 2, systolic: 134, diastolic: 86, pulse: 76, takenAt: "2026-04-18T08:05:00" },
-    { id: 3, systolic: 122, diastolic: 78, pulse: 70, takenAt: "2026-04-17T08:20:00" },
-  ],
+  vitals: [],
 
   toggleTheme: () => {
     const next = get().theme === "light" ? "dark" : "light";

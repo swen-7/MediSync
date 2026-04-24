@@ -169,6 +169,8 @@ function Page() {
     return Math.floor(m.remaining_qty / d) <= m.refill_reminder_days;
   });
 
+  const [showAddMed, setShowAddMed] = useState(false);
+
   return (
     <AppShell title={t("my_meds")}>
       <div className="flex-1 px-4 pt-4 pb-24">
@@ -197,7 +199,15 @@ function Page() {
           </button>
         </div>
 
-        <div className="font-extrabold text-fs-sm mb-2.5">{t("medications")}</div>
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="font-extrabold text-fs-sm">{t("medications")}</div>
+          <button
+            onClick={() => setShowAddMed(true)}
+            className="text-green text-fs-xs font-bold bg-transparent border-none px-2 py-1 rounded-lg hover:bg-green-l"
+          >
+            + {t("meds_add")}
+          </button>
+        </div>
         {lowStock.length > 0 && (
           <div className="bg-amber-l border border-amber rounded-xl p-3 mb-2.5 text-fs-xs font-bold text-amber">
             ⚠ {t("refill_warning")} {lowStock.map((m) => m.med_name).join(", ")}
@@ -246,13 +256,7 @@ function Page() {
             {t("vitals_empty")}
           </div>
         ) : (
-          vitals.map((v) => (
-            <VitalCard key={v.id} v={v} onDelete={async () => {
-              const { error } = await supabase.from("vitals").delete().eq("id", v.id);
-              if (error) return toast.error(error.message);
-              setVitals((prev) => prev.filter((x) => x.id !== v.id));
-            }} />
-          ))
+          vitals.map((v) => <VitalCard key={v.id} v={v} />)
         )}
       </div>
 
@@ -291,11 +295,22 @@ function Page() {
           onResolved={() => setReload((r) => r + 1)}
         />
       )}
+
+      {showAddMed && profile?.id && (
+        <AddMedModal
+          patientId={profile.id}
+          onClose={() => setShowAddMed(false)}
+          onSaved={() => {
+            setShowAddMed(false);
+            setReload((r) => r + 1);
+          }}
+        />
+      )}
     </AppShell>
   );
 }
 
-function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
+function VitalCard({ v }: { v: DbVital }) {
   const t = useT_hook();
   const bp = bpCategory(v.blood_pressure_sys, v.blood_pressure_dia);
   const gl = glucoseCategory(v.blood_glucose);
@@ -327,7 +342,6 @@ function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
         <div className="flex flex-col items-end gap-1.5">
           {bp && <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${bp.cls}`}>BP: {t(bp.key)}</span>}
           {gl && <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${gl.cls}`}>🩸 {t(gl.key)}</span>}
-          <button onClick={onDelete} className="text-muted-foreground hover:text-red text-fs-xs font-bold mt-1" aria-label="Delete">✕</button>
         </div>
       </div>
     </div>
@@ -418,6 +432,94 @@ function AddVitalModal({
             className="flex-1 bg-green text-white font-bold py-3 rounded-xl disabled:opacity-50"
           >
             {t("vitals_save")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddMedModal({
+  patientId,
+  onClose,
+  onSaved,
+}: {
+  patientId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const t = useT_hook();
+  const [name, setName] = useState("");
+  const [dosage, setDosage] = useState("");
+  const [frequency, setFrequency] = useState("Once daily");
+  const [time, setTime] = useState("08:00");
+  const [qty, setQty] = useState("30");
+  const [busy, setBusy] = useState(false);
+
+  const valid = name.trim().length > 0 && Number(qty) > 0;
+
+  const save = async () => {
+    if (!valid) return;
+    setBusy(true);
+    const total = Math.max(1, parseInt(qty, 10));
+    const { error } = await supabase.from("medications").insert({
+      patient_id: patientId,
+      med_name: name.trim(),
+      dosage: dosage.trim(),
+      frequency,
+      scheduled_time: time.length === 5 ? `${time}:00` : time,
+      total_qty: total,
+      remaining_qty: total,
+      active: true,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Medication added");
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[400] flex items-end justify-center" onClick={onClose}>
+      <div className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+        <div className="font-display text-fs-xl font-semibold mb-4">{t("meds_add")}</div>
+
+        <label className="block mb-3">
+          <span className="text-fs-xs font-bold text-muted-foreground">Name</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" placeholder="e.g. Amlodipine 5mg" />
+        </label>
+
+        <label className="block mb-3">
+          <span className="text-fs-xs font-bold text-muted-foreground">Dosage</span>
+          <input value={dosage} onChange={(e) => setDosage(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" placeholder="e.g. 1 tablet" />
+        </label>
+
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <label className="block">
+            <span className="text-fs-xs font-bold text-muted-foreground">Frequency</span>
+            <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5">
+              <option>Once daily</option>
+              <option>Twice daily</option>
+              <option>Three times daily</option>
+              <option>Four times daily</option>
+              <option>As needed</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-fs-xs font-bold text-muted-foreground">Time</span>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
+          </label>
+        </div>
+
+        <label className="block mb-4">
+          <span className="text-fs-xs font-bold text-muted-foreground">Quantity (pills)</span>
+          <input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
+        </label>
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 bg-input-bg text-foreground font-bold py-3 rounded-xl">{t("cancel")}</button>
+          <button disabled={!valid || busy} onClick={save} className="flex-1 bg-green text-white font-bold py-3 rounded-xl disabled:opacity-50">
+            {busy ? "Saving…" : t("save_event").replace("event", "medication") || "Save"}
           </button>
         </div>
       </div>

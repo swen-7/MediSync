@@ -48,6 +48,7 @@ function SettingsPage() {
         <PasswordCard />
         <LinkAccountCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
+        {profile.role === "supervisor" && <DeveloperResetCard />}
       </div>
     </AppShell>
   );
@@ -378,6 +379,47 @@ function LinkSupervisorInner() {
 }
 
 const inp = "w-full bg-input-bg border border-border rounded-xl px-3 py-2.5 text-fs-sm";
+
+function DeveloperResetCard() {
+  const { patients } = usePatients();
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const wipe = async (patientId: string, name: string) => {
+    const ok = window.confirm(
+      `Are you sure? This deletes all logs and calendar events for ${name}.`,
+    );
+    if (!ok) return;
+    setBusy(patientId);
+    const { error } = await supabase.rpc("factory_reset_patient_data", { _patient_id: patientId });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success(`Wiped data for ${name}`);
+  };
+
+  return (
+    <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border-2 border-red">
+      <div className="font-extrabold text-fs-sm mb-1 text-red">⚠ Developer Data Wipe (Testing Only)</div>
+      <p className="text-fs-xs text-muted-foreground mb-3">
+        Clears medication logs, calendar events, and push subscriptions for a linked patient. Cannot be undone.
+      </p>
+      {patients.length === 0 ? (
+        <div className="text-fs-xs text-muted-foreground text-center py-2">No patients linked.</div>
+      ) : (
+        patients.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => wipe(p.id, p.full_name)}
+            disabled={busy === p.id}
+            className="w-full bg-red text-white font-bold py-2.5 rounded-xl mb-2 disabled:opacity-50 text-fs-sm"
+          >
+            {busy === p.id ? "Wiping…" : `Wipe ${p.full_name}'s data`}
+          </button>
+        ))
+      )}
+    </section>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block mb-3">
