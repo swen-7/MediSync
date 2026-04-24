@@ -327,7 +327,6 @@ function VitalCard({ v, onDelete }: { v: DbVital; onDelete: () => void }) {
         <div className="flex flex-col items-end gap-1.5">
           {bp && <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${bp.cls}`}>BP: {t(bp.key)}</span>}
           {gl && <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold ${gl.cls}`}>🩸 {t(gl.key)}</span>}
-          <button onClick={onDelete} className="text-muted-foreground hover:text-red text-fs-xs font-bold mt-1" aria-label="Delete">✕</button>
         </div>
       </div>
     </div>
