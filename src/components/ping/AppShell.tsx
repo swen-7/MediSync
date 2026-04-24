@@ -35,7 +35,7 @@ export function AppShell({
 
   const goSettings = () => navigate({ to: "/settings" });
   const goAlerts = () => navigate({ to: "/alerts" });
-  const isCaregiver = profile?.role === "caregiver";
+  const isSupervisor = profile?.role === "supervisor";
 
   return (
     <div className="min-h-screen flex flex-col max-w-[480px] mx-auto bg-background relative">
@@ -70,7 +70,7 @@ export function AppShell({
           >
             {theme === "light" ? t("dark") : t("light")}
           </button>
-          {profile && isCaregiver && (
+          {profile && isSupervisor && (
             <button
               onClick={goAlerts}
               title="Alerts"

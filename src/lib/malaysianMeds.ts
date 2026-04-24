@@ -2,7 +2,7 @@
  * Common medications encountered in Malaysian primary care (Klinik Kesihatan,
  * GP clinics, hospital outpatient pharmacies). Curated from MOH formulary
  * categories — used to populate the "Add medication" searchable dropdown
- * so caregivers/patients don't have to type free-text every time.
+ * so supervisors/patients don't have to type free-text every time.
  */
 export interface MedSuggestion {
   /** Display name with strength */

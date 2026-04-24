@@ -12,7 +12,7 @@ export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
       { title: "Settings — Ping" },
-      { name: "description", content: "Manage your profile, notifications, and caregiver contact." },
+      { name: "description", content: "Manage your profile, notifications, and supervisor contact." },
     ],
   }),
   component: SettingsPage,
@@ -229,7 +229,7 @@ function LinkAccountCard() {
   return (
     <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
       <div className="font-extrabold text-fs-sm mb-3">{t("link_tab")}</div>
-      {profile.role === "patient" ? <LinkPatientInner /> : <LinkCaregiverInner />}
+      {profile.role === "patient" ? <LinkPatientInner /> : <LinkSupervisorInner />}
     </section>
   );
 }
@@ -262,7 +262,7 @@ function LinkPatientInner() {
   );
 }
 
-function LinkCaregiverInner() {
+function LinkSupervisorInner() {
   const t = useT_hook();
   const { patients, refresh, setSelectedId } = usePatients();
   const [code, setCode] = useState("");
@@ -290,7 +290,7 @@ function LinkCaregiverInner() {
 
   const unlink = async (id: string, name: string) => {
     if (!confirm(`${t("link_unlink_confirm")} ${name}?`)) return;
-    const { error } = await supabase.from("patients_caregivers").delete().eq("patient_id", id);
+    const { error } = await supabase.from("patients_supervisors").delete().eq("patient_id", id);
     if (error) return toast.error(error.message);
     toast.success(t("link_unlinked"));
     await refresh();

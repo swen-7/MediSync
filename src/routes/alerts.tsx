@@ -36,7 +36,7 @@ function Page() {
   const t = useT_hook();
   const { profile } = useAuth();
   const { selected, patients } = usePatients();
-  const isCaregiver = profile?.role === "caregiver";
+  const isSupervisor = profile?.role === "supervisor";
   const [rows, setRows] = useState<AlertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
@@ -45,8 +45,8 @@ function Page() {
     const load = async () => {
       if (!profile?.id) return;
       setLoading(true);
-      // Caregiver: scope to selected patient. Patient: own logs.
-      const patientId = isCaregiver ? selected?.id : profile.id;
+      // Supervisor: scope to selected patient. Patient: own logs.
+      const patientId = isSupervisor ? selected?.id : profile.id;
       if (!patientId) {
         setRows([]);
         setLoading(false);
@@ -72,9 +72,9 @@ function Page() {
       const now = new Date();
       const synthetic: AlertRow[] = [];
       const patientName =
-        isCaregiver ? selected?.full_name ?? "Patient" : profile.full_name;
+        isSupervisor ? selected?.full_name ?? "Patient" : profile.full_name;
       const patientPhone =
-        isCaregiver ? selected?.phone ?? null : profile.phone;
+        isSupervisor ? selected?.phone ?? null : profile.phone;
       for (const m of meds ?? []) {
         if (loggedIds.has(m.id)) continue;
         const info = computeWindow(now, m.scheduled_time);
@@ -115,7 +115,7 @@ function Page() {
       setLoading(false);
     };
     load();
-  }, [profile?.id, isCaregiver, selected?.id, reload]);
+  }, [profile?.id, isSupervisor, selected?.id, reload]);
 
   const active = rows.filter(
     (r) => (r.status === "pending" || r.status === "missed") && !r.resolved_at,
@@ -130,7 +130,7 @@ function Page() {
     }
     const { error } = await supabase
       .from("medication_logs")
-      .update({ resolved_at: new Date().toISOString(), resolved_by_caregiver_id: profile?.id ?? null })
+      .update({ resolved_at: new Date().toISOString(), resolved_by_supervisor_id: profile?.id ?? null })
       .eq("id", id);
     if (error) toast.error(error.message);
     else setReload((r) => r + 1);
@@ -151,7 +151,7 @@ function Page() {
   return (
     <AppShell title={t("alerts_title")}>
       <div className="flex-1 px-4 pt-4 pb-24">
-        {isCaregiver && <PatientSwitcher />}
+        {isSupervisor && <PatientSwitcher />}
         <div className="font-display text-fs-xl font-semibold mb-1">{t("alerts_title")}</div>
         <div className="text-fs-sm text-muted-foreground mb-4">
           {active.length} active · {history.length} history
@@ -165,7 +165,7 @@ function Page() {
           {t("emergency_999")}
         </a>
 
-        {isCaregiver && patients.length === 0 ? (
+        {isSupervisor && patients.length === 0 ? (
           <div className="bg-card rounded-2xl p-6 shadow-[var(--shadow-ping)] border border-border text-center text-muted-foreground text-fs-sm">
             No linked patients yet. Use the Link tab to add one.
           </div>

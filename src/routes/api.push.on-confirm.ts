@@ -7,10 +7,10 @@ import { createClient } from "@supabase/supabase-js";
 /**
  * Called when a patient confirms a medication. Side-effects:
  *  1. Patient affirmation push ("Great job…")
- *  2. If remainingQty === 7, send linked caregivers a low-stock alert.
+ *  2. If remainingQty === 7, send linked supervisors a low-stock alert.
  *
  * Authentication note: this endpoint trusts patientId from the body but only
- * uses it to look up subscriptions and linked caregivers — no privileged
+ * uses it to look up subscriptions and linked supervisors — no privileged
  * mutations are performed. Push payloads carry no sensitive data.
  */
 
@@ -96,13 +96,13 @@ export const Route = createFileRoute("/api/push/on-confirm")({
           return Response.json({ ok: false, error: "invalid body" }, { status: 400 });
         }
 
-        // Authorize: caller must be the patient themselves OR a linked caregiver.
+        // Authorize: caller must be the patient themselves OR a linked supervisor.
         if (callerId !== parsed.patientId) {
           const { data: link } = await supabaseAdmin
-            .from("patients_caregivers")
+            .from("patients_supervisors")
             .select("id")
             .eq("patient_id", parsed.patientId)
-            .eq("caregiver_id", callerId)
+            .eq("supervisor_id", callerId)
             .maybeSingle();
           if (!link) {
             return Response.json({ ok: false, error: "forbidden" }, { status: 403 });
@@ -124,18 +124,18 @@ export const Route = createFileRoute("/api/push/on-confirm")({
         });
         await Promise.all((patientSubs ?? []).map((s) => sendOne(s as SubRow, affirm, vapid)));
 
-        // 2) Low-stock alert to caregivers when qty === 7
+        // 2) Low-stock alert to supervisors when qty === 7
         if (parsed.remainingQty === 7) {
           const { data: links } = await supabaseAdmin
-            .from("patients_caregivers")
-            .select("caregiver_id")
+            .from("patients_supervisors")
+            .select("supervisor_id")
             .eq("patient_id", parsed.patientId);
-          const caregiverIds = (links ?? []).map((l) => l.caregiver_id);
-          if (caregiverIds.length > 0) {
+          const supervisorIds = (links ?? []).map((l) => l.supervisor_id);
+          if (supervisorIds.length > 0) {
             const { data: cgSubs } = await supabaseAdmin
               .from("push_subscriptions")
               .select("user_id, endpoint, p256dh, auth")
-              .in("user_id", caregiverIds);
+              .in("user_id", supervisorIds);
             const lowStock = JSON.stringify({
               title: "⚠️ Low Stock Alert",
               body: `${parsed.patientName} only has 7 doses of ${parsed.medName} remaining. Please arrange a refill.`,

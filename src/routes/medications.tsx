@@ -82,12 +82,12 @@ function MedsPage() {
     load();
   };
 
-  const isCaregiver = profile?.role === "caregiver";
+  const isSupervisor = profile?.role === "supervisor";
 
   return (
     <AppShell title="Medications">
       <div className="flex-1 px-4 pt-4 pb-24">
-        {isCaregiver && <PatientSwitcher />}
+        {isSupervisor && <PatientSwitcher />}
 
         {!patientId ? (
           <EmptyNoPatient />

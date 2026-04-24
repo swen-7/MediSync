@@ -11,7 +11,7 @@ export const Route = createFileRoute("/link")({
   head: () => ({
     meta: [
       { title: "Link accounts — Ping" },
-      { name: "description", content: "Link a patient and caregiver using a 6-digit invite code." },
+      { name: "description", content: "Link a patient and supervisor using a 6-digit invite code." },
     ],
   }),
   component: LinkPage,
@@ -37,7 +37,7 @@ function LinkPage() {
   return (
     <AppShell title={t("link_tab")}>
       <div className="flex-1 px-4 pt-4 pb-24">
-        {profile.role === "patient" ? <PatientView /> : <CaregiverView />}
+        {profile.role === "patient" ? <PatientView /> : <SupervisorView />}
       </div>
     </AppShell>
   );
@@ -73,7 +73,7 @@ function PatientView() {
   );
 }
 
-function CaregiverView() {
+function SupervisorView() {
   const t = useT_hook();
   const { patients, refresh, setSelectedId } = usePatients();
   const [code, setCode] = useState("");
@@ -104,7 +104,7 @@ function CaregiverView() {
 
   const unlink = async (id: string, name: string) => {
     if (!confirm(`${t("link_unlink_confirm")} ${name}?`)) return;
-    const { error } = await supabase.from("patients_caregivers").delete().eq("patient_id", id);
+    const { error } = await supabase.from("patients_supervisors").delete().eq("patient_id", id);
     if (error) {
       toast.error(error.message);
       return;

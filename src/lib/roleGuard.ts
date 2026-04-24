@@ -3,7 +3,7 @@
  * Prevents users from accessing routes outside their role's permitted pages.
  *
  * Patient routes: /my-meds, /clinics, /link, /settings, /alerts (own logs)
- * Caregiver routes: /dashboard, /medications, /alerts, /clinics, /link, /settings, /calendar
+ * Supervisor routes: /dashboard, /medications, /alerts, /clinics, /link, /settings, /calendar
  */
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -16,7 +16,7 @@ const PATIENT_ALLOWED = new Set([
   "/settings",
 ]);
 
-const CAREGIVER_ALLOWED = new Set([
+const SUPERVISOR_ALLOWED = new Set([
   "/dashboard",
   "/medications",
   "/alerts",
@@ -40,7 +40,7 @@ export function useRoleGuard(currentPath: string) {
 
     if (profile.role === "patient" && !PATIENT_ALLOWED.has(currentPath)) {
       navigate({ to: "/my-meds" });
-    } else if (profile.role === "caregiver" && !CAREGIVER_ALLOWED.has(currentPath)) {
+    } else if (profile.role === "supervisor" && !SUPERVISOR_ALLOWED.has(currentPath)) {
       navigate({ to: "/dashboard" });
     }
   }, [loading, session, profile?.role, currentPath, navigate]);
