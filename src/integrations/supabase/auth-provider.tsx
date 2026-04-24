@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./client";
 
-export type AppRole = "caregiver" | "patient";
+export type AppRole = "supervisor" | "patient";
 
 export interface AuthProfile {
   id: string;
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const pending =
         typeof window !== "undefined" ? window.localStorage.getItem(PENDING_ROLE_KEY) : null;
       const pendingRole: AppRole | null =
-        pending === "caregiver" || pending === "patient" ? pending : null;
+        pending === "supervisor" || pending === "patient" ? pending : null;
 
       try {
         await supabase.rpc("ensure_my_profile", {
