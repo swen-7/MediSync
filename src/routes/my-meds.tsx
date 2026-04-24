@@ -246,13 +246,7 @@ function Page() {
             {t("vitals_empty")}
           </div>
         ) : (
-          vitals.map((v) => (
-            <VitalCard key={v.id} v={v} onDelete={async () => {
-              const { error } = await supabase.from("vitals").delete().eq("id", v.id);
-              if (error) return toast.error(error.message);
-              setVitals((prev) => prev.filter((x) => x.id !== v.id));
-            }} />
-          ))
+          vitals.map((v) => <VitalCard key={v.id} v={v} />)
         )}
       </div>
 
