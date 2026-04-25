@@ -285,6 +285,15 @@ export function formatClock(d: Date, fmt: TimeFormat): string {
   });
 }
 
+/** Format a Date as HH:MM (no seconds) respecting the user's time format. */
+export function formatClockShort(d: Date, fmt: TimeFormat): string {
+  return d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: fmt === "12h",
+  });
+}
+
 export function useTimeFormat() {
   return usePingStore((s) => s.timeFormat);
 }
