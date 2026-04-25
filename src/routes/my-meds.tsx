@@ -453,26 +453,44 @@ function AddMedModal({
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
   const [frequency, setFrequency] = useState("Once daily");
-  const [time, setTime] = useState("08:00");
+  const [times, setTimes] = useState<string[]>(["08:00"]);
   const [qty, setQty] = useState("30");
   const [busy, setBusy] = useState(false);
 
-  const valid = name.trim().length > 0 && Number(qty) > 0;
+  // Keep the times[] length in sync with the chosen frequency.
+  useEffect(() => {
+    const need = Math.max(1, freqDoses(frequency) || 1);
+    setTimes((prev) => {
+      if (prev.length === need) return prev;
+      const defaults = ["08:00", "13:00", "19:00", "22:00"];
+      const next = Array.from({ length: need }, (_, i) => prev[i] ?? defaults[i] ?? "08:00");
+      return next;
+    });
+  }, [frequency]);
+
+  const valid =
+    name.trim().length > 0 &&
+    Number(qty) > 0 &&
+    times.every((tm) => /^\d{2}:\d{2}$/.test(tm));
 
   const save = async () => {
     if (!valid) return;
     setBusy(true);
     const total = Math.max(1, parseInt(qty, 10));
-    const { error } = await supabase.from("medications").insert({
+    // Spread `total` quantity across all dose rows so existing per-row
+    // remaining-qty logic stays consistent.
+    const perRowTotal = Math.max(1, Math.ceil(total / times.length));
+    const rows = times.map((tm) => ({
       patient_id: patientId,
       med_name: name.trim(),
       dosage: dosage.trim(),
       frequency,
-      scheduled_time: time.length === 5 ? `${time}:00` : time,
-      total_qty: total,
-      remaining_qty: total,
+      scheduled_time: `${tm}:00`,
+      total_qty: perRowTotal,
+      remaining_qty: perRowTotal,
       active: true,
-    });
+    }));
+    const { error } = await supabase.from("medications").insert(rows);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Medication added");
@@ -507,15 +525,31 @@ function AddMedModal({
             </select>
           </label>
           <label className="block">
-            <span className="text-fs-xs font-bold text-muted-foreground">Time</span>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
+            <span className="text-fs-xs font-bold text-muted-foreground">Quantity</span>
+            <input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
           </label>
         </div>
 
-        <label className="block mb-4">
-          <span className="text-fs-xs font-bold text-muted-foreground">Quantity (pills)</span>
-          <input type="number" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} className="mt-1 w-full bg-input-bg border border-border rounded-xl px-3 py-2.5" />
-        </label>
+        <div className="mb-4">
+          <div className="text-fs-xs font-bold text-muted-foreground mb-1">
+            Times {times.length > 1 ? `(${times.length} doses)` : ""}
+          </div>
+          <div className="space-y-2">
+            {times.map((tm, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-fs-xs text-muted-foreground w-14 shrink-0">Dose {i + 1}</span>
+                <input
+                  type="time"
+                  value={tm}
+                  onChange={(e) =>
+                    setTimes((prev) => prev.map((x, idx) => (idx === i ? e.target.value : x)))
+                  }
+                  className="flex-1 bg-input-bg border border-border rounded-xl px-3 py-2.5"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className="flex gap-2">
           <button onClick={onClose} className="flex-1 bg-input-bg text-foreground font-bold py-3 rounded-xl">{t("cancel")}</button>
