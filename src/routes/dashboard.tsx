@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/ping/AppShell";
-import { useT_hook } from "@/store/usePingStore";
+import { useT_hook, useTimeFormat, formatScheduledTime } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { usePatients } from "@/lib/patientContext";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const t = useT_hook();
+  const timeFmt = useTimeFormat();
   const navigate = useNavigate();
   const location = useLocation();
   useRoleGuard(location.pathname);
@@ -132,7 +133,7 @@ function Dashboard() {
                   <div className="min-w-0">
                     <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
                     <div className="text-fs-xs text-muted-foreground mt-0.5">
-                      {m.dosage} · {m.frequency} · {m.scheduled_time.slice(0, 5)}
+                      {m.dosage} · {m.frequency} · {formatScheduledTime(m.scheduled_time, timeFmt)}
                     </div>
                   </div>
                   <span
