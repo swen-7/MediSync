@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
-      { title: "Family calendar — Ping" },
+      { title: "Family calendar — MediSync" },
       { name: "description", content: "Shared family medication and appointment calendar." },
     ],
   }),

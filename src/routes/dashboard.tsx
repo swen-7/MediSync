@@ -15,7 +15,7 @@ import { subscribeUserToPush } from "@/lib/push";
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Ping" },
+      { title: "Dashboard — MediSync" },
       { name: "description", content: "Supervisor dashboard: monitor your loved ones' medication adherence in real time." },
     ],
   }),
@@ -88,7 +88,7 @@ function Dashboard() {
   };
 
   return (
-    <AppShell title="Ping.">
+    <AppShell title="MediSync">
       <div className="flex-1 px-4 pt-3.5 pb-24">
         <PatientSwitcher />
 

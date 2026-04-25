@@ -4,7 +4,7 @@ import { AppShell } from "@/components/ping/AppShell";
 export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
-      { title: "History — Ping" },
+      { title: "History — MediSync" },
     ],
   }),
   component: Page,

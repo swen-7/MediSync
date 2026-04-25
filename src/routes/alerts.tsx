@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/alerts")({
   head: () => ({
     meta: [
-      { title: "Alerts — Ping" },
+      { title: "Alerts — MediSync" },
       { name: "description", content: "Active medication alerts for your loved ones." },
     ],
   }),

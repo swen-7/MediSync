@@ -11,7 +11,7 @@ import { PatientSwitcher } from "@/components/ping/PatientSwitcher";
 export const Route = createFileRoute("/medications")({
   head: () => ({
     meta: [
-      { title: "Medications — Ping" },
+      { title: "Medications — MediSync" },
       { name: "description", content: "Manage medications, dosages, and refills." },
     ],
   }),

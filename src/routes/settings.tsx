@@ -11,7 +11,7 @@ import { usePatients } from "@/lib/patientContext";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Ping" },
+      { title: "Settings — MediSync" },
       { name: "description", content: "Manage your profile, notifications, and supervisor contact." },
     ],
   }),

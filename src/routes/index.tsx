@@ -7,13 +7,13 @@ import { useEffect } from "react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ping — Never miss the moment that matters" },
+      { title: "MediSync — Never miss the moment that matters" },
       {
         name: "description",
         content:
-          "Ping is a Malaysian medication reminder app for families and caregivers — PIN check-ins, pill photos, and family calendars to keep loved ones safe.",
+          "MediSync is a Malaysian medication reminder app for families and caregivers — PIN check-ins, pill photos, and family calendars to keep loved ones safe.",
       },
-      { property: "og:title", content: "Ping — Medication reminders for Malaysian families" },
+      { property: "og:title", content: "MediSync — Medication reminders for Malaysian families" },
       {
         property: "og:description",
         content: "Automatic medication reminders, family check-ins, and care escalation built for Malaysia.",

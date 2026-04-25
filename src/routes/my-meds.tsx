@@ -25,7 +25,7 @@ interface DbVital {
 export const Route = createFileRoute("/my-meds")({
   head: () => ({
     meta: [
-      { title: "My Meds — Ping" },
+      { title: "My Meds — MediSync" },
       { name: "description", content: "Your medications, vitals, and emergency contacts." },
     ],
   }),
