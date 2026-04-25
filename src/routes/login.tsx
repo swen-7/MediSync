@@ -11,8 +11,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — Ping" },
-      { name: "description", content: "Sign in to Ping to manage medication reminders for your loved ones." },
+      { title: "Sign in — MediSync" },
+      { name: "description", content: "Sign in to MediSync to manage medication reminders for your loved ones." },
     ],
   }),
   component: LoginPage,
@@ -147,7 +147,7 @@ function LoginPage() {
   const showSpinner = loading || (session && !profile?.role);
 
   return (
-    <AppShell title="Ping." showTabs={false}>
+    <AppShell title="MediSync" showTabs={false}>
       <div className="flex-1 px-4 pt-3.5 pb-24">
         {showSpinner ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -160,7 +160,7 @@ function LoginPage() {
               {isSU ? t("create_account") : t("sign_in")}
             </div>
             <div className="text-fs-sm text-muted-foreground mb-4 leading-relaxed">
-              {isSU ? "Join Ping" : "Sign in to continue"}
+              {isSU ? "Join MediSync" : "Sign in to continue"}
             </div>
 
             {/* Role toggle ONLY visible during signup. */}

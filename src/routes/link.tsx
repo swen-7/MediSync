@@ -10,7 +10,7 @@ import { useT_hook } from "@/store/usePingStore";
 export const Route = createFileRoute("/link")({
   head: () => ({
     meta: [
-      { title: "Link accounts — Ping" },
+      { title: "Link accounts — MediSync" },
       { name: "description", content: "Link a patient and supervisor using a 6-digit invite code." },
     ],
   }),

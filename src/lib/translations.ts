@@ -2,7 +2,7 @@ export type Lang = "en" | "ms" | "zh";
 
 export const LANGS: Record<Lang, Record<string, string>> = {
   en: {
-    appName: "Ping",
+    appName: "MediSync",
     photo_step: "Photo",
     photo_two_step_title: "📷 Two-photo verification",
     photo_prompt_1: "Take a picture of the pill in your hand.",
@@ -25,7 +25,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     link_age_invalid: "Enter a valid age (0–130).",
     pdf_export_button: "Export 30-Day Adherence Report",
     landing_headline: "Never miss the moment that matters.",
-    landing_sub: "Ping makes sure your loved one takes their medication every day — automatically.",
+    landing_sub: "MediSync makes sure your loved one takes their medication every day — automatically.",
     iam_supervisor: "I am a Supervisor",
     iam_elderly: "I am registering as a Patient",
     sign_in: "Sign In",
@@ -189,7 +189,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     streak_start: "Start your streak today!",
   },
   ms: {
-    appName: "Ping",
+    appName: "MediSync",
     photo_step: "Foto",
     photo_two_step_title: "📷 Pengesahan dua foto",
     photo_prompt_1: "Ambil gambar pil di tangan anda.",
@@ -212,7 +212,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     link_age_invalid: "Masukkan umur sah (0–130).",
     pdf_export_button: "Eksport Laporan Pematuhan 30 Hari",
     landing_headline: "Jangan terlepas saat yang penting.",
-    landing_sub: "Ping memastikan orang tersayang anda mengambil ubat setiap hari — secara automatik.",
+    landing_sub: "MediSync memastikan orang tersayang anda mengambil ubat setiap hari — secara automatik.",
     iam_supervisor: "Saya Penyelia",
     iam_elderly: "Saya mendaftar sebagai Pesakit",
     sign_in: "Log Masuk",
@@ -367,7 +367,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     streak_start: "Mula rekod hari ini!",
   },
   zh: {
-    appName: "Ping",
+    appName: "MediSync",
     photo_step: "照片",
     photo_two_step_title: "📷 双照片验证",
     photo_prompt_1: "拍一张你手里拿着药的照片",
@@ -390,7 +390,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     link_age_invalid: "请输入有效年龄 (0–130)。",
     pdf_export_button: "导出30天服药报告",
     landing_headline: "不要错过重要时刻。",
-    landing_sub: "Ping 确保您的家人每天按时服药 — 自动化管理。",
+    landing_sub: "MediSync 确保您的家人每天按时服药 — 自动化管理。",
     iam_supervisor: "我是监督员",
     iam_elderly: "我以患者身份注册",
     sign_in: "登录",

@@ -33,14 +33,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "MediSync — Medication Reminders" },
+      { name: "description", content: "MediSync keeps loved ones on schedule with photo-verified medication reminders." },
+      { name: "author", content: "MediSync" },
+      { property: "og:title", content: "MediSync" },
+      { property: "og:description", content: "Photo-verified medication reminders for families and caregivers." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "MediSync" },
     ],
     links: [
       {

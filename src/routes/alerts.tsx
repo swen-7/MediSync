@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/alerts")({
   head: () => ({
     meta: [
-      { title: "Alerts — Ping" },
+      { title: "Alerts — MediSync" },
       { name: "description", content: "Active medication alerts for your loved ones." },
     ],
   }),
@@ -188,7 +188,7 @@ function Page() {
                   {t("alert_resolved")}
                 </div>
                 {history.slice(0, 20).map((a) => (
-                  <HistoryCard key={a.id} a={a} fmt={fmt} photoUrl={photoUrl} t={t} />
+                  <HistoryCard key={a.id} a={a} fmt={fmt} t={t} />
                 ))}
               </div>
             )}
@@ -256,31 +256,12 @@ function ActiveCard({
 }
 
 function HistoryCard({
-  a, fmt, photoUrl, t,
+  a, fmt, t,
 }: {
   a: AlertRow;
   fmt: (iso: string) => string;
-  photoUrl: (path: string) => Promise<string | null>;
   t: (k: string) => string;
 }) {
-  const [thumb1, setThumb1] = useState<string | null>(null);
-  const [thumb2, setThumb2] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (a.photo1_url) {
-        const u = await photoUrl(a.photo1_url);
-        if (!cancelled) setThumb1(u);
-      }
-      if (a.photo2_url) {
-        const u = await photoUrl(a.photo2_url);
-        if (!cancelled) setThumb2(u);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [a.photo1_url, a.photo2_url, photoUrl]);
-
   return (
     <div className="bg-card rounded-xl p-3 mb-2 border border-border opacity-90">
       <div className="flex items-center justify-between gap-2">
@@ -292,20 +273,6 @@ function HistoryCard({
           ✓ {a.status === "confirmed" ? "Taken" : t("alert_resolved")}
         </span>
       </div>
-      {(thumb1 || thumb2) && (
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          {thumb1 && (
-            <a href={thumb1} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border bg-black">
-              <img src={thumb1} alt="Pill in hand" className="w-full h-full object-cover" />
-            </a>
-          )}
-          {thumb2 && (
-            <a href={thumb2} target="_blank" rel="noopener noreferrer" className="block aspect-video rounded-lg overflow-hidden border border-border bg-black">
-              <img src={thumb2} alt="Empty hand" className="w-full h-full object-cover" />
-            </a>
-          )}
-        </div>
-      )}
     </div>
   );
 }

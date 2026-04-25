@@ -1,4 +1,4 @@
-/* Ping service worker — handles Web Push display + click. */
+/* MediSync service worker — handles Web Push display + click. */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
@@ -8,7 +8,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "Ping", body: "You have a new notification.", url: "/" };
+  let payload = { title: "MediSync", body: "You have a new notification.", url: "/" };
   try {
     if (event.data) {
       const parsed = event.data.json();

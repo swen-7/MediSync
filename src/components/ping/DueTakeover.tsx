@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/integrations/supabase/auth-provider";
-import { useT_hook } from "@/store/usePingStore";
+import { useT_hook, useTimeFormat, formatScheduledTime, formatClockShort } from "@/store/usePingStore";
 import { PhotoCapture } from "./PhotoCapture";
 import { showLocalNotification } from "@/lib/push";
 import type { DueState } from "@/lib/dueLogic";
@@ -30,6 +30,7 @@ export function DueTakeover({
   onResolved: () => void;
 }) {
   const t = useT_hook();
+  const timeFmt = useTimeFormat();
   const { profile } = useAuth();
   const [photo1, setPhoto1] = useState<Blob | null>(null);
   const [photo2, setPhoto2] = useState<Blob | null>(null);
@@ -46,7 +47,7 @@ export function DueTakeover({
     state === "approaching"
       ? `In ${minutesDelta} min`
       : state === "due"
-      ? `Now (${dueAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
+      ? `Now (${formatClockShort(dueAt, timeFmt)})`
       : `${Math.abs(minutesDelta)} min late`;
 
   const uploadPhoto = async (logId: string, slot: 1 | 2, blob: Blob): Promise<string | null> => {
@@ -162,15 +163,24 @@ export function DueTakeover({
 
   return (
     <div className="fixed inset-0 z-[600] bg-background/95 backdrop-blur-sm flex flex-col">
-      <div className={`${tone.bg} ${tone.text} px-5 py-4 text-center font-extrabold text-fs-base shadow-[var(--shadow-ping)]`}>
-        {tone.label} · {subtitle}
+      <div className={`${tone.bg} ${tone.text} px-5 py-4 font-extrabold text-fs-base shadow-[var(--shadow-ping)] flex items-center justify-between gap-3`}>
+        <span className="flex-1 text-center">{tone.label} · {subtitle}</span>
+        <button
+          type="button"
+          onClick={onResolved}
+          aria-label="Postpone"
+          title="Postpone"
+          className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center text-xl leading-none shrink-0"
+        >
+          ✕
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 max-w-[480px] mx-auto w-full">
         <div className="bg-card rounded-2xl p-5 border border-border shadow-[var(--shadow-ping)] mb-4">
           <div className="font-display text-fs-2xl font-semibold mb-1">{med.med_name}</div>
           <div className="text-fs-sm text-muted-foreground">
-            {med.dosage} · {med.scheduled_time.slice(0, 5)}
+            {med.dosage} · {formatScheduledTime(med.scheduled_time, timeFmt)}
           </div>
           <div className="text-fs-xs text-muted-foreground mt-2">
             Remaining: {med.remaining_qty} {med.unit}

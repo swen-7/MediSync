@@ -1,7 +1,6 @@
 import { Link, useLocation, useRouter, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
-import { usePingStore, initials, useT_hook } from "@/store/usePingStore";
+import { usePingStore, initials, useT_hook, useLiveClock } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 
 export function AppShell({
@@ -16,17 +15,10 @@ export function AppShell({
   const router = useRouter();
   const navigate = useNavigate();
   const t = useT_hook();
-  const { theme, lang, toggleTheme, cycleLang, setLang } = usePingStore();
+  const { theme, lang, toggleTheme, cycleLang } = usePingStore();
   const { profile, session, signOut } = useAuth();
   const langLabel = ({ en: "EN", ms: "BM", zh: "中文" } as const)[lang];
-
-  // Hydrate UI language from saved profile preference (one-time on login)
-  useEffect(() => {
-    if (profile?.language_pref && profile.language_pref !== lang) {
-      setLang(profile.language_pref);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id]);
+  const clock = useLiveClock();
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,12 +42,21 @@ export function AppShell({
           </button>
           {!session && (
             <Link to="/" className="font-display text-2xl font-semibold text-green ml-1 tracking-tight">
-              Ping<span className="text-foreground">.</span>
+              MediSync
             </Link>
           )}
         </div>
-        <div className="font-bold text-fs-xs text-foreground max-w-[130px] text-center truncate">
-          {title}
+        <div className="flex flex-col items-center min-w-0 px-1">
+          {title && (
+            <div className="font-bold text-fs-xs text-foreground max-w-[130px] text-center truncate leading-tight">
+              {title}
+            </div>
+          )}
+          {session && (
+            <div className="font-mono tabular-nums text-[0.65rem] text-muted-foreground leading-tight mt-0.5">
+              {clock}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button

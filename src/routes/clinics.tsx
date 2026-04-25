@@ -5,7 +5,7 @@ import { MY_CLINICS, MY_STATES, wazeUrl, gmapsUrl, type Clinic } from "@/lib/cli
 import { useT_hook } from "@/store/usePingStore";
 
 export const Route = createFileRoute("/clinics")({
-  head: () => ({ meta: [{ title: "Clinics — Ping" }] }),
+  head: () => ({ meta: [{ title: "Clinics — MediSync" }] }),
   component: Page,
 });
 
