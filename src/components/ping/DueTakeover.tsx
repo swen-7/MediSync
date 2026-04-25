@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/integrations/supabase/auth-provider";
-import { useT_hook } from "@/store/usePingStore";
+import { useT_hook, useTimeFormat, formatScheduledTime, formatClock } from "@/store/usePingStore";
 import { PhotoCapture } from "./PhotoCapture";
 import { showLocalNotification } from "@/lib/push";
 import type { DueState } from "@/lib/dueLogic";
@@ -30,6 +30,7 @@ export function DueTakeover({
   onResolved: () => void;
 }) {
   const t = useT_hook();
+  const timeFmt = useTimeFormat();
   const { profile } = useAuth();
   const [photo1, setPhoto1] = useState<Blob | null>(null);
   const [photo2, setPhoto2] = useState<Blob | null>(null);
@@ -46,7 +47,7 @@ export function DueTakeover({
     state === "approaching"
       ? `In ${minutesDelta} min`
       : state === "due"
-      ? `Now (${dueAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})`
+      ? `Now (${formatClock(dueAt, timeFmt).replace(/:\d\d\s/, " ").replace(/(\d\d):(\d\d):\d\d/, "$1:$2")})`
       : `${Math.abs(minutesDelta)} min late`;
 
   const uploadPhoto = async (logId: string, slot: 1 | 2, blob: Blob): Promise<string | null> => {
