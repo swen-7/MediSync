@@ -1,6 +1,6 @@
 {
-  "name": "Ping — Medication Reminders",
-  "short_name": "Ping",
+  "name": "MediSync — Medication Reminders",
+  "short_name": "MediSync",
   "description": "Never miss the moment that matters.",
   "start_url": "/",
   "display": "standalone",
