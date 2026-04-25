@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/ping/AppShell";
-import { useT_hook } from "@/store/usePingStore";
+import { useT_hook, useTimeFormat, formatScheduledTime } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -80,6 +80,7 @@ function freqDoses(f: string) {
 
 function Page() {
   const t = useT_hook();
+  const timeFmt = useTimeFormat();
   const location = useLocation();
   useRoleGuard(location.pathname);
   const { profile } = useAuth();
@@ -233,7 +234,7 @@ function Page() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
-                    <div className="text-fs-xs text-muted-foreground mt-0.5">{m.frequency} · {m.scheduled_time.slice(0, 5)}</div>
+                    <div className="text-fs-xs text-muted-foreground mt-0.5">{m.frequency} · {formatScheduledTime(m.scheduled_time, timeFmt)}</div>
                   </div>
                   <span className={`px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"}`}>
                     {m.remaining_qty} {m.unit}
