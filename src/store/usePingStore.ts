@@ -3,6 +3,25 @@ import type { Lang } from "@/lib/translations";
 
 export type Role = "supervisor" | "elderly";
 export type Status = "confirmed" | "missed" | "pending";
+export type TimeFormat = "12h" | "24h";
+
+const LS_LANG = "medisync.lang";
+const LS_TIMEFMT = "medisync.timeFormat";
+const LS_THEME = "medisync.theme";
+
+function readLS<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const v = window.localStorage.getItem(key);
+    return v && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function writeLS(key: string, value: string) {
+  if (typeof window === "undefined") return;
+  try { window.localStorage.setItem(key, value); } catch { /* ignore */ }
+}
 
 export interface Medication {
   id: number;
@@ -86,6 +105,7 @@ interface UndoState {
 interface PingState {
   theme: "light" | "dark";
   lang: Lang;
+  timeFormat: TimeFormat;
   user: User | null;
   loginRole: Role;
   loginMode: "login" | "signup";
@@ -105,6 +125,7 @@ interface PingState {
   toggleTheme: () => void;
   cycleLang: () => void;
   setLang: (l: Lang) => void;
+  setTimeFormat: (f: TimeFormat) => void;
   setLoginRole: (r: Role) => void;
   setLoginMode: (m: "login" | "signup") => void;
   doLogin: () => void;
@@ -127,8 +148,9 @@ interface PingState {
 let undoTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const usePingStore = create<PingState>((set, get) => ({
-  theme: "light",
-  lang: "en",
+  theme: readLS<"light" | "dark">(LS_THEME, ["light", "dark"], "light"),
+  lang: readLS<Lang>(LS_LANG, ["en", "ms", "zh"], "en"),
+  timeFormat: readLS<TimeFormat>(LS_TIMEFMT, ["12h", "24h"], "12h"),
   user: null,
   loginRole: "supervisor",
   loginMode: "login",
@@ -150,14 +172,18 @@ export const usePingStore = create<PingState>((set, get) => ({
     if (typeof document !== "undefined") {
       document.documentElement.classList.toggle("dark", next === "dark");
     }
+    writeLS(LS_THEME, next);
     set({ theme: next });
   },
   cycleLang: () => {
     const order: Lang[] = ["en", "ms", "zh"];
     const cur = get().lang;
-    set({ lang: order[(order.indexOf(cur) + 1) % order.length] });
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    writeLS(LS_LANG, next);
+    set({ lang: next });
   },
-  setLang: (l) => set({ lang: l }),
+  setLang: (l) => { writeLS(LS_LANG, l); set({ lang: l }); },
+  setTimeFormat: (f) => { writeLS(LS_TIMEFMT, f); set({ timeFormat: f }); },
   setLoginRole: (r) => set({ loginRole: r }),
   setLoginMode: (m) => set({ loginMode: m }),
   doLogin: () => {
