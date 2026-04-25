@@ -2,7 +2,7 @@ export type Lang = "en" | "ms" | "zh";
 
 export const LANGS: Record<Lang, Record<string, string>> = {
   en: {
-    appName: "Ping",
+    appName: "MediSync",
     photo_step: "Photo",
     photo_two_step_title: "📷 Two-photo verification",
     photo_prompt_1: "Take a picture of the pill in your hand.",
@@ -189,7 +189,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     streak_start: "Start your streak today!",
   },
   ms: {
-    appName: "Ping",
+    appName: "MediSync",
     photo_step: "Foto",
     photo_two_step_title: "📷 Pengesahan dua foto",
     photo_prompt_1: "Ambil gambar pil di tangan anda.",
@@ -367,7 +367,7 @@ export const LANGS: Record<Lang, Record<string, string>> = {
     streak_start: "Mula rekod hari ini!",
   },
   zh: {
-    appName: "Ping",
+    appName: "MediSync",
     photo_step: "照片",
     photo_two_step_title: "📷 双照片验证",
     photo_prompt_1: "拍一张你手里拿着药的照片",
