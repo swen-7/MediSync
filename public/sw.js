@@ -25,6 +25,13 @@ self.addEventListener("push", (event) => {
       data: { url: payload.url || "/" },
       tag: payload.tag || undefined,
       renotify: !!payload.tag,
+      // Best-effort audible alert. Most desktop browsers ignore `sound`,
+      // but some Android variants honor it. `silent: false` requests an
+      // audible default chime where supported.
+      sound: payload.sound || "/ping.mp3",
+      silent: false,
+      vibrate: payload.vibrate || [200, 100, 200, 100, 400],
+      requireInteraction: !!payload.requireInteraction,
     })
   );
 });
