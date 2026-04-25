@@ -188,7 +188,7 @@ function Page() {
                   {t("alert_resolved")}
                 </div>
                 {history.slice(0, 20).map((a) => (
-                  <HistoryCard key={a.id} a={a} fmt={fmt} photoUrl={photoUrl} t={t} />
+                  <HistoryCard key={a.id} a={a} fmt={fmt} t={t} />
                 ))}
               </div>
             )}
