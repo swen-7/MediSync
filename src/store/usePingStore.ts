@@ -260,6 +260,48 @@ export function tzTime(tz: string) {
   }
 }
 
+/** Format an HH:MM or HH:MM:SS string respecting the user's 12/24h preference. */
+export function formatScheduledTime(time: string, fmt: TimeFormat): string {
+  if (!time) return "";
+  const [hStr, mStr] = time.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr ?? "0", 10);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return time;
+  if (fmt === "24h") {
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  }
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = ((h + 11) % 12) + 1;
+  return `${h12}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+/** Format a Date respecting the time format preference. */
+export function formatClock(d: Date, fmt: TimeFormat): string {
+  return d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: fmt === "12h",
+  });
+}
+
+export function useTimeFormat() {
+  return usePingStore((s) => s.timeFormat);
+}
+
+/** Live-updating clock string in the user's preferred format. */
+export function useLiveClock(): string {
+  const fmt = useTimeFormat();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!now) return "";
+  return formatClock(now, fmt);
+}
+
 /** Hook-version of tzTime that updates each minute. SSR-safe (returns "—" until hydrated). */
 import { useEffect, useState } from "react";
 export function useTzTime(tz: string) {
