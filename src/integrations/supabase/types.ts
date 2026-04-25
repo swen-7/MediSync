@@ -51,6 +51,7 @@ export type Database = {
           due_at: string
           id: string
           medication_id: string
+          missed_alert_sent_at: string | null
           notes: string | null
           patient_id: string
           photo1_url: string | null
@@ -67,6 +68,7 @@ export type Database = {
           due_at: string
           id?: string
           medication_id: string
+          missed_alert_sent_at?: string | null
           notes?: string | null
           patient_id: string
           photo1_url?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           due_at?: string
           id?: string
           medication_id?: string
+          missed_alert_sent_at?: string | null
           notes?: string | null
           patient_id?: string
           photo1_url?: string | null
