@@ -260,7 +260,6 @@ function HistoryCard({
 }: {
   a: AlertRow;
   fmt: (iso: string) => string;
-  photoUrl: (path: string) => Promise<string | null>;
   t: (k: string) => string;
 }) {
   return (
