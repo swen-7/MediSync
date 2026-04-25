@@ -163,8 +163,17 @@ export function DueTakeover({
 
   return (
     <div className="fixed inset-0 z-[600] bg-background/95 backdrop-blur-sm flex flex-col">
-      <div className={`${tone.bg} ${tone.text} px-5 py-4 text-center font-extrabold text-fs-base shadow-[var(--shadow-ping)]`}>
-        {tone.label} · {subtitle}
+      <div className={`${tone.bg} ${tone.text} px-5 py-4 font-extrabold text-fs-base shadow-[var(--shadow-ping)] flex items-center justify-between gap-3`}>
+        <span className="flex-1 text-center">{tone.label} · {subtitle}</span>
+        <button
+          type="button"
+          onClick={onResolved}
+          aria-label="Postpone"
+          title="Postpone"
+          className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center text-xl leading-none shrink-0"
+        >
+          ✕
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 max-w-[480px] mx-auto w-full">
