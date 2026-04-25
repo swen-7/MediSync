@@ -57,7 +57,6 @@ function SettingsPage() {
 }
 
 function DisplayPrefsCard() {
-  const t = useT_hook();
   const { timeFormat, setTimeFormat } = usePingStore();
   return (
     <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
@@ -83,7 +82,7 @@ function DisplayPrefsCard() {
         })}
       </div>
       <div className="text-fs-xs text-muted-foreground mt-2">
-        Applies to the global clock and all medication times. {t ? "" : ""}
+        Applies to the global clock and all medication times.
       </div>
     </section>
   );
