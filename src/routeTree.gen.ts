@@ -23,6 +23,7 @@ import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPushVapidRouteImport } from './routes/api.push.vapid'
 import { Route as ApiPushOnConfirmRouteImport } from './routes/api.push.on-confirm'
+import { Route as ApiPublicHooksCheckMissedMedsRouteImport } from './routes/api.public.hooks.check-missed-meds'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -94,6 +95,12 @@ const ApiPushOnConfirmRoute = ApiPushOnConfirmRouteImport.update({
   path: '/api/push/on-confirm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksCheckMissedMedsRoute =
+  ApiPublicHooksCheckMissedMedsRouteImport.update({
+    id: '/api/public/hooks/check-missed-meds',
+    path: '/api/public/hooks/check-missed-meds',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
+  '/api/public/hooks/check-missed-meds': typeof ApiPublicHooksCheckMissedMedsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
+  '/api/public/hooks/check-missed-meds': typeof ApiPublicHooksCheckMissedMedsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
+  '/api/public/hooks/check-missed-meds': typeof ApiPublicHooksCheckMissedMedsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/push/on-confirm'
     | '/api/push/vapid'
+    | '/api/public/hooks/check-missed-meds'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/push/on-confirm'
     | '/api/push/vapid'
+    | '/api/public/hooks/check-missed-meds'
   id:
     | '__root__'
     | '/'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/push/on-confirm'
     | '/api/push/vapid'
+    | '/api/public/hooks/check-missed-meds'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +223,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   ApiPushOnConfirmRoute: typeof ApiPushOnConfirmRoute
   ApiPushVapidRoute: typeof ApiPushVapidRoute
+  ApiPublicHooksCheckMissedMedsRoute: typeof ApiPublicHooksCheckMissedMedsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushOnConfirmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/check-missed-meds': {
+      id: '/api/public/hooks/check-missed-meds'
+      path: '/api/public/hooks/check-missed-meds'
+      fullPath: '/api/public/hooks/check-missed-meds'
+      preLoaderRoute: typeof ApiPublicHooksCheckMissedMedsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   ApiPushOnConfirmRoute: ApiPushOnConfirmRoute,
   ApiPushVapidRoute: ApiPushVapidRoute,
+  ApiPublicHooksCheckMissedMedsRoute: ApiPublicHooksCheckMissedMedsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

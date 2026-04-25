@@ -124,25 +124,37 @@ export const Route = createFileRoute("/api/push/on-confirm")({
         });
         await Promise.all((patientSubs ?? []).map((s) => sendOne(s as SubRow, affirm, vapid)));
 
-        // 2) Low-stock alert to supervisors when qty === 7
-        if (parsed.remainingQty === 7) {
-          const { data: links } = await supabaseAdmin
-            .from("patients_supervisors")
-            .select("supervisor_id")
-            .eq("patient_id", parsed.patientId);
-          const supervisorIds = (links ?? []).map((l) => l.supervisor_id);
-          if (supervisorIds.length > 0) {
-            const { data: cgSubs } = await supabaseAdmin
-              .from("push_subscriptions")
-              .select("user_id, endpoint, p256dh, auth")
-              .in("user_id", supervisorIds);
+        // 2) Notify supervisors: always on consume + low-stock when qty === 7
+        const { data: links } = await supabaseAdmin
+          .from("patients_supervisors")
+          .select("supervisor_id")
+          .eq("patient_id", parsed.patientId);
+        const supervisorIds = (links ?? []).map((l) => l.supervisor_id);
+        if (supervisorIds.length > 0) {
+          const { data: cgSubs } = await supabaseAdmin
+            .from("push_subscriptions")
+            .select("user_id, endpoint, p256dh, auth")
+            .in("user_id", supervisorIds);
+          const subs = (cgSubs ?? []) as SubRow[];
+
+          // 2a) Consumption confirmation to supervisors (every dose)
+          const consumed = JSON.stringify({
+            title: "💊 Medication Taken",
+            body: `${parsed.patientName} just confirmed ${parsed.medName}.`,
+            tag: `consumed-${parsed.medicationId}-${Date.now()}`,
+            url: "/dashboard",
+          });
+          await Promise.all(subs.map((s) => sendOne(s, consumed, vapid)));
+
+          // 2b) Low-stock alert when remaining hits 7
+          if (parsed.remainingQty === 7) {
             const lowStock = JSON.stringify({
               title: "⚠️ Low Stock Alert",
               body: `${parsed.patientName} only has 7 doses of ${parsed.medName} remaining. Please arrange a refill.`,
               tag: `lowstock-${parsed.medicationId}`,
               url: "/dashboard",
             });
-            await Promise.all((cgSubs ?? []).map((s) => sendOne(s as SubRow, lowStock, vapid)));
+            await Promise.all(subs.map((s) => sendOne(s, lowStock, vapid)));
           }
         }
 
