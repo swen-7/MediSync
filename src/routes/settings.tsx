@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useT_hook } from "@/store/usePingStore";
+import { usePingStore } from "@/store/usePingStore";
 import { usePatients } from "@/lib/patientContext";
 
 export const Route = createFileRoute("/settings")({
@@ -46,11 +47,45 @@ function SettingsPage() {
         <ProfileCard onSaved={refresh} />
         <EmailCard />
         <PasswordCard />
+        <DisplayPrefsCard />
         <LinkAccountCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
         {profile.role === "supervisor" && <DeveloperResetCard />}
       </div>
     </AppShell>
+  );
+}
+
+function DisplayPrefsCard() {
+  const t = useT_hook();
+  const { timeFormat, setTimeFormat } = usePingStore();
+  return (
+    <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
+      <div className="font-extrabold text-fs-sm mb-3">Display</div>
+      <div className="text-fs-xs font-bold text-muted-foreground mb-2">Time format</div>
+      <div className="flex gap-2">
+        {(["12h", "24h"] as const).map((opt) => {
+          const active = timeFormat === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setTimeFormat(opt)}
+              className={`flex-1 font-bold py-2.5 rounded-xl text-fs-sm border-2 transition-colors ${
+                active
+                  ? "bg-green text-white border-green"
+                  : "bg-input-bg text-foreground border-border hover:border-green"
+              }`}
+            >
+              {opt === "12h" ? "12-Hour (AM/PM)" : "24-Hour"}
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-fs-xs text-muted-foreground mt-2">
+        Applies to the global clock and all medication times. {t ? "" : ""}
+      </div>
+    </section>
   );
 }
 
