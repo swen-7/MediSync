@@ -171,7 +171,7 @@ export function DueTakeover({
         <div className="bg-card rounded-2xl p-5 border border-border shadow-[var(--shadow-ping)] mb-4">
           <div className="font-display text-fs-2xl font-semibold mb-1">{med.med_name}</div>
           <div className="text-fs-sm text-muted-foreground">
-            {med.dosage} · {med.scheduled_time.slice(0, 5)}
+            {med.dosage} · {formatScheduledTime(med.scheduled_time, timeFmt)}
           </div>
           <div className="text-fs-xs text-muted-foreground mt-2">
             Remaining: {med.remaining_qty} {med.unit}
