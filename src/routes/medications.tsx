@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePatients } from "@/lib/patientContext";
 import { MY_MEDS, FREQUENCIES, UNITS, type MedSuggestion } from "@/lib/malaysianMeds";
 import { PatientSwitcher } from "@/components/ping/PatientSwitcher";
+import { useTimeFormat, formatScheduledTime } from "@/store/usePingStore";
 
 export const Route = createFileRoute("/medications")({
   head: () => ({
@@ -156,6 +157,7 @@ function MedCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const timeFmt = useTimeFormat();
   const dosesPerDay = freqToDoses(med.frequency);
   const daysLeft = dosesPerDay > 0 ? Math.floor(med.remaining_qty / dosesPerDay) : null;
   const needsRefill = daysLeft !== null && daysLeft <= med.refill_reminder_days;
@@ -165,7 +167,7 @@ function MedCard({
         <div className="flex-1 min-w-0">
           <div className="font-extrabold text-fs-base truncate">{med.med_name}</div>
           <div className="text-fs-xs text-muted-foreground mt-0.5">
-            {med.dosage} · {med.frequency} · {fmtTime(med.scheduled_time)}
+            {med.dosage} · {med.frequency} · {formatScheduledTime(med.scheduled_time, timeFmt)}
           </div>
           <div className="flex items-center gap-2 mt-2">
             <span
