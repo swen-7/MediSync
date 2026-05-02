@@ -256,12 +256,27 @@ function ActiveCard({
 }
 
 function HistoryCard({
-  a, fmt, t,
+  a, fmt, t, photoUrl, videoUrl,
 }: {
   a: AlertRow;
   fmt: (iso: string) => string;
   t: (k: string) => string;
+  photoUrl: (path: string) => Promise<string | null>;
+  videoUrl: (path: string) => Promise<string | null>;
 }) {
+  const openPhoto = async (path: string | null) => {
+    if (!path) return;
+    const url = await photoUrl(path);
+    if (url) window.open(url, "_blank");
+    else toast.error("Could not load photo");
+  };
+  const openVideo = async () => {
+    if (!a.video_url) return;
+    const url = await videoUrl(a.video_url);
+    if (url) window.open(url, "_blank");
+    else toast.error("Could not load video");
+  };
+  const hasMedia = a.photo1_url || a.photo2_url || a.video_url;
   return (
     <div className="bg-card rounded-xl p-3 mb-2 border border-border opacity-90">
       <div className="flex items-center justify-between gap-2">
@@ -273,6 +288,34 @@ function HistoryCard({
           ✓ {a.status === "confirmed" ? "Taken" : t("alert_resolved")}
         </span>
       </div>
+      {hasMedia && (
+        <div className="flex gap-2 mt-2 flex-wrap">
+          {a.photo1_url && (
+            <button
+              onClick={() => openPhoto(a.photo1_url)}
+              className="text-fs-xs font-bold px-2.5 py-1 rounded-full bg-background border border-border"
+            >
+              📷 Photo 1
+            </button>
+          )}
+          {a.photo2_url && (
+            <button
+              onClick={() => openPhoto(a.photo2_url)}
+              className="text-fs-xs font-bold px-2.5 py-1 rounded-full bg-background border border-border"
+            >
+              📷 Photo 2
+            </button>
+          )}
+          {a.video_url && (
+            <button
+              onClick={openVideo}
+              className="text-fs-xs font-bold px-2.5 py-1 rounded-full bg-background border border-border"
+            >
+              🎥 Video
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
