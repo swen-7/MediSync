@@ -172,6 +172,14 @@ function Page() {
 
   const [showAddMed, setShowAddMed] = useState(false);
 
+  // Postponed dose keys: `${medId}|${dueAtISO}`. Skipping these keeps the
+  // DueTakeover closed without touching the database, so the patient can
+  // re-open it later from the med card's "Check in" button.
+  const [postponed, setPostponed] = useState<Set<string>>(new Set());
+  const [forceOpenMedId, setForceOpenMedId] = useState<string | null>(null);
+  const dueKey = dueMed ? `${dueMed.med.id}|${dueMed.info.dueAt.toISOString()}` : null;
+  const hideDueTakeover = !!(dueKey && postponed.has(dueKey) && forceOpenMedId !== dueMed?.med.id);
+
   return (
     <AppShell title={t("my_meds")}>
       <div className="flex-1 px-4 pt-4 pb-24">
