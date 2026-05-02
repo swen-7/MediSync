@@ -172,6 +172,14 @@ function Page() {
 
   const [showAddMed, setShowAddMed] = useState(false);
 
+  // Postponed dose keys: `${medId}|${dueAtISO}`. Skipping these keeps the
+  // DueTakeover closed without touching the database, so the patient can
+  // re-open it later from the med card's "Check in" button.
+  const [postponed, setPostponed] = useState<Set<string>>(new Set());
+  const [forceOpenMedId, setForceOpenMedId] = useState<string | null>(null);
+  const dueKey = dueMed ? `${dueMed.med.id}|${dueMed.info.dueAt.toISOString()}` : null;
+  const hideDueTakeover = !!(dueKey && postponed.has(dueKey) && forceOpenMedId !== dueMed?.med.id);
+
   return (
     <AppShell title={t("my_meds")}>
       <div className="flex-1 px-4 pt-4 pb-24">
@@ -229,6 +237,8 @@ function Page() {
             const d = freqDoses(m.frequency);
             const daysLeft = d > 0 ? Math.floor(m.remaining_qty / d) : null;
             const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
+            const info = computeWindow(now, m.scheduled_time);
+            const isDueOrLate = !loggedToday.has(m.id) && (info.state === "due" || info.state === "overdue");
             return (
               <div key={m.id} className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -240,6 +250,25 @@ function Page() {
                     {m.remaining_qty} {m.unit}
                   </span>
                 </div>
+                {isDueOrLate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Re-open the DueTakeover for this med even if it was postponed.
+                      const k = `${m.id}|${info.dueAt.toISOString()}`;
+                      setPostponed((s) => {
+                        if (!s.has(k)) return s;
+                        const next = new Set(s);
+                        next.delete(k);
+                        return next;
+                      });
+                      setForceOpenMedId(m.id);
+                    }}
+                    className="mt-3 w-full bg-green text-white font-extrabold text-fs-sm py-2.5 rounded-xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform"
+                  >
+                    ✓ Check in now
+                  </button>
+                )}
               </div>
             );
           })
@@ -287,13 +316,24 @@ function Page() {
         />
       )}
 
-      {dueMed && (
+      {dueMed && !hideDueTakeover && (
         <DueTakeover
+          key={dueKey ?? "due"}
           med={dueMed.med}
           state={dueMed.info.state}
           dueAt={dueMed.info.dueAt}
           minutesDelta={dueMed.info.minutesDelta}
-          onResolved={() => setReload((r) => r + 1)}
+          onResolved={() => {
+            setForceOpenMedId(null);
+            setReload((r) => r + 1);
+          }}
+          onPostpone={() => {
+            // Mark this exact dose as postponed; do NOT change DB status.
+            // The med stays "Pending" and the "Check in now" button on the
+            // card lets the patient retry whenever they're ready.
+            if (dueKey) setPostponed((s) => new Set(s).add(dueKey));
+            setForceOpenMedId(null);
+          }}
         />
       )}
 
