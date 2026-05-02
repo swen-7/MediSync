@@ -316,13 +316,24 @@ function Page() {
         />
       )}
 
-      {dueMed && (
+      {dueMed && !hideDueTakeover && (
         <DueTakeover
+          key={dueKey ?? "due"}
           med={dueMed.med}
           state={dueMed.info.state}
           dueAt={dueMed.info.dueAt}
           minutesDelta={dueMed.info.minutesDelta}
-          onResolved={() => setReload((r) => r + 1)}
+          onResolved={() => {
+            setForceOpenMedId(null);
+            setReload((r) => r + 1);
+          }}
+          onPostpone={() => {
+            // Mark this exact dose as postponed; do NOT change DB status.
+            // The med stays "Pending" and the "Check in now" button on the
+            // card lets the patient retry whenever they're ready.
+            if (dueKey) setPostponed((s) => new Set(s).add(dueKey));
+            setForceOpenMedId(null);
+          }}
         />
       )}
 
