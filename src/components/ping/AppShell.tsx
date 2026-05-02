@@ -2,6 +2,7 @@ import { Link, useLocation, useRouter, useNavigate } from "@tanstack/react-route
 import type { ReactNode } from "react";
 import { usePingStore, initials, useT_hook, useLiveClock } from "@/store/usePingStore";
 import { useAuth } from "@/integrations/supabase/auth-provider";
+import { useAlertsCount } from "@/lib/useAlertsCount";
 
 export function AppShell({
   title,
@@ -19,6 +20,7 @@ export function AppShell({
   const { profile, session, signOut } = useAuth();
   const langLabel = ({ en: "EN", ms: "BM", zh: "中文" } as const)[lang];
   const clock = useLiveClock();
+  const alertsCount = useAlertsCount();
 
   const handleSignOut = async () => {
     await signOut();
@@ -76,9 +78,14 @@ export function AppShell({
               onClick={goAlerts}
               title="Alerts"
               aria-label="Alerts"
-              className="text-muted-foreground text-base px-2 py-1.5 rounded-lg hover:bg-amber-l hover:text-amber transition-colors"
+              className="relative text-muted-foreground text-base px-2 py-1.5 rounded-lg hover:bg-amber-l hover:text-amber transition-colors"
             >
               🔔
+              {alertsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red text-white rounded-full text-[0.6rem] font-extrabold flex items-center justify-center leading-none border-2 border-[var(--nav-bg)]">
+                  {alertsCount > 99 ? "99+" : alertsCount}
+                </span>
+              )}
             </button>
           )}
           {profile && (
