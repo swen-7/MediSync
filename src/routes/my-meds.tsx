@@ -237,6 +237,8 @@ function Page() {
             const d = freqDoses(m.frequency);
             const daysLeft = d > 0 ? Math.floor(m.remaining_qty / d) : null;
             const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
+            const info = computeWindow(now, m.scheduled_time);
+            const isDueOrLate = !loggedToday.has(m.id) && (info.state === "due" || info.state === "overdue");
             return (
               <div key={m.id} className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
                 <div className="flex items-center justify-between gap-2">
@@ -248,6 +250,25 @@ function Page() {
                     {m.remaining_qty} {m.unit}
                   </span>
                 </div>
+                {isDueOrLate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Re-open the DueTakeover for this med even if it was postponed.
+                      const k = `${m.id}|${info.dueAt.toISOString()}`;
+                      setPostponed((s) => {
+                        if (!s.has(k)) return s;
+                        const next = new Set(s);
+                        next.delete(k);
+                        return next;
+                      });
+                      setForceOpenMedId(m.id);
+                    }}
+                    className="mt-3 w-full bg-green text-white font-extrabold text-fs-sm py-2.5 rounded-xl shadow-[var(--shadow-ping)] active:scale-[0.98] transition-transform"
+                  >
+                    ✓ Check in now
+                  </button>
+                )}
               </div>
             );
           })
