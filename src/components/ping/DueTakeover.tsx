@@ -22,12 +22,14 @@ export function DueTakeover({
   dueAt,
   minutesDelta,
   onResolved,
+  onPostpone,
 }: {
   med: DueMed;
   state: DueState;
   dueAt: Date;
   minutesDelta: number;
   onResolved: () => void;
+  onPostpone?: () => void;
 }) {
   const t = useT_hook();
   const timeFmt = useTimeFormat();
@@ -167,7 +169,15 @@ export function DueTakeover({
         <span className="flex-1 text-center">{tone.label} · {subtitle}</span>
         <button
           type="button"
-          onClick={onResolved}
+          onClick={() => {
+            // Postpone: do NOT touch the database. Reset local capture state
+            // and hand control back to the parent so the takeover unmounts.
+            setPhoto1(null);
+            setPhoto2(null);
+            setBusy(false);
+            if (onPostpone) onPostpone();
+            else onResolved();
+          }}
           aria-label="Postpone"
           title="Postpone"
           className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center text-xl leading-none shrink-0"
