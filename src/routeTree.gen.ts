@@ -22,6 +22,7 @@ import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPushVapidRouteImport } from './routes/api.push.vapid'
+import { Route as ApiPushOnVitalRouteImport } from './routes/api.push.on-vital'
 import { Route as ApiPushOnConfirmRouteImport } from './routes/api.push.on-confirm'
 import { Route as ApiPublicHooksCheckMissedMedsRouteImport } from './routes/api.public.hooks.check-missed-meds'
 
@@ -90,6 +91,11 @@ const ApiPushVapidRoute = ApiPushVapidRouteImport.update({
   path: '/api/push/vapid',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPushOnVitalRoute = ApiPushOnVitalRouteImport.update({
+  id: '/api/push/on-vital',
+  path: '/api/push/on-vital',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushOnConfirmRoute = ApiPushOnConfirmRouteImport.update({
   id: '/api/push/on-confirm',
   path: '/api/push/on-confirm',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
+  '/api/push/on-vital': typeof ApiPushOnVitalRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
   '/api/public/hooks/check-missed-meds': typeof ApiPublicHooksCheckMissedMedsRoute
 }
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
+  '/api/push/on-vital': typeof ApiPushOnVitalRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
   '/api/public/hooks/check-missed-meds': typeof ApiPublicHooksCheckMissedMedsRoute
 }
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/patient-dashboard': typeof PatientDashboardRoute
   '/settings': typeof SettingsRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
+  '/api/push/on-vital': typeof ApiPushOnVitalRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
   '/api/public/hooks/check-missed-meds': typeof ApiPublicHooksCheckMissedMedsRoute
 }
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/patient-dashboard'
     | '/settings'
     | '/api/push/on-confirm'
+    | '/api/push/on-vital'
     | '/api/push/vapid'
     | '/api/public/hooks/check-missed-meds'
   fileRoutesByTo: FileRoutesByTo
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/patient-dashboard'
     | '/settings'
     | '/api/push/on-confirm'
+    | '/api/push/on-vital'
     | '/api/push/vapid'
     | '/api/public/hooks/check-missed-meds'
   id:
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/patient-dashboard'
     | '/settings'
     | '/api/push/on-confirm'
+    | '/api/push/on-vital'
     | '/api/push/vapid'
     | '/api/public/hooks/check-missed-meds'
   fileRoutesById: FileRoutesById
@@ -222,6 +234,7 @@ export interface RootRouteChildren {
   PatientDashboardRoute: typeof PatientDashboardRoute
   SettingsRoute: typeof SettingsRoute
   ApiPushOnConfirmRoute: typeof ApiPushOnConfirmRoute
+  ApiPushOnVitalRoute: typeof ApiPushOnVitalRoute
   ApiPushVapidRoute: typeof ApiPushVapidRoute
   ApiPublicHooksCheckMissedMedsRoute: typeof ApiPublicHooksCheckMissedMedsRoute
 }
@@ -319,6 +332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushVapidRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/push/on-vital': {
+      id: '/api/push/on-vital'
+      path: '/api/push/on-vital'
+      fullPath: '/api/push/on-vital'
+      preLoaderRoute: typeof ApiPushOnVitalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push/on-confirm': {
       id: '/api/push/on-confirm'
       path: '/api/push/on-confirm'
@@ -350,6 +370,7 @@ const rootRouteChildren: RootRouteChildren = {
   PatientDashboardRoute: PatientDashboardRoute,
   SettingsRoute: SettingsRoute,
   ApiPushOnConfirmRoute: ApiPushOnConfirmRoute,
+  ApiPushOnVitalRoute: ApiPushOnVitalRoute,
   ApiPushVapidRoute: ApiPushVapidRoute,
   ApiPublicHooksCheckMissedMedsRoute: ApiPublicHooksCheckMissedMedsRoute,
 }

@@ -101,8 +101,13 @@ export function DueTakeover({
           .eq("id", log.id);
       }
 
-      // 3. decrement remaining_qty
-      const newQty = Math.max(0, med.remaining_qty - 1);
+      // 3. decrement remaining_qty by exact dosage amount (e.g. "2", "5ml" → 2/5)
+      const dosageNum = (() => {
+        const m = (med.dosage ?? "").match(/[\d.]+/);
+        const n = m ? parseFloat(m[0]) : 1;
+        return Number.isFinite(n) && n > 0 ? n : 1;
+      })();
+      const newQty = Math.max(0, med.remaining_qty - dosageNum);
       await supabase
         .from("medications")
         .update({ remaining_qty: newQty })

@@ -93,6 +93,7 @@ function Page() {
   const [vitals, setVitals] = useState<DbVital[]>([]);
   const [streak, setStreak] = useState(0);
   const [streakDoneToday, setStreakDoneToday] = useState(false);
+  const [warned5min, setWarned5min] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -138,6 +139,22 @@ function Page() {
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
+
+  // 5-minute "Upcoming Medication" warning
+  useEffect(() => {
+    for (const m of meds) {
+      if (loggedToday.has(m.id)) continue;
+      const info = computeWindow(now, m.scheduled_time);
+      const key = `${m.id}|${info.dueAt.toISOString().slice(0, 10)}`;
+      if (info.minutesDelta === 5 && !warned5min.has(key)) {
+        setWarned5min((s) => new Set(s).add(key));
+        toast(`⏰ Upcoming Medication in 5 minutes: ${m.med_name}`, { duration: 10000 });
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          try { new Notification("⏰ Upcoming Medication in 5 minutes", { body: m.med_name }); } catch {}
+        }
+      }
+    }
+  }, [now, meds, loggedToday, warned5min]);
 
   // Patient opts into background push once on the dashboard.
   useEffect(() => {
@@ -312,6 +329,27 @@ function Page() {
             if (data) setVitals((prev) => [data as DbVital, ...prev]);
             setShowVitals(false);
             toast.success("Reading saved");
+            // Notify linked supervisors of the new vital (best-effort)
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.access_token) {
+                fetch("/api/push/on-vital", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    patientId: profile.id,
+                    patientName: profile.full_name ?? "Patient",
+                    systolic: v.systolic ?? null,
+                    diastolic: v.diastolic ?? null,
+                    pulse: v.pulse ?? null,
+                    glucose: v.glucose ?? null,
+                  }),
+                }).catch(() => {});
+              }
+            } catch { /* non-blocking */ }
           }}
         />
       )}

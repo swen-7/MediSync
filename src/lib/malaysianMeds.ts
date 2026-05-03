@@ -83,4 +83,4 @@ export const FREQUENCIES = [
   "As needed",
 ];
 
-export const UNITS = ["pills", "ml", "puffs", "units", "drops", "sachets"];
+export const UNITS = ["pills", "ml", "L"];
