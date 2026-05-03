@@ -41,6 +41,7 @@ function Page() {
   const [rows, setRows] = useState<AlertRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(0);
+  const [detail, setDetail] = useState<AlertRow | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -155,8 +156,9 @@ function Page() {
 
   return (
     <AppShell title={t("alerts_title")}>
-        {/* Detail modal */}
-        <DetailGate photoUrl={photoUrl} videoUrl={videoUrl} fmtFull={fmtFull} />
+        {detail && (
+          <DetailModal a={detail} onClose={() => setDetail(null)} photoUrl={photoUrl} videoUrl={videoUrl} fmtFull={fmtFull} />
+        )}
       <div className="flex-1 px-4 pt-4 pb-24">
         {isSupervisor && <PatientSwitcher />}
         <div className="font-display text-fs-xl font-semibold mb-1">{t("alerts_title")}</div>
@@ -195,7 +197,7 @@ function Page() {
                   {t("alert_resolved")}
                 </div>
                 {history.slice(0, 20).map((a) => (
-                  <HistoryCard key={a.id} a={a} fmtFull={fmtFull} t={t} />
+                  <HistoryCard key={a.id} a={a} fmtFull={fmtFull} t={t} onOpen={() => setDetail(a)} />
                 ))}
               </div>
             )}
