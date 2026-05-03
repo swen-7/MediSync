@@ -11,6 +11,7 @@ import { DueTakeover } from "@/components/ping/DueTakeover";
 import { useRoleGuard } from "@/lib/roleGuard";
 import { evaluateStreak } from "@/lib/streak";
 import { subscribeUserToPush } from "@/lib/push";
+import { MedEditor } from "@/routes/medications";
 
 interface DbVital {
   id: string;
@@ -376,8 +377,9 @@ function Page() {
       )}
 
       {showAddMed && profile?.id && (
-        <AddMedModal
+        <MedEditor
           patientId={profile.id}
+          initial={null}
           onClose={() => setShowAddMed(false)}
           onSaved={() => {
             setShowAddMed(false);
