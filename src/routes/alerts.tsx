@@ -265,66 +265,112 @@ function ActiveCard({
 }
 
 function HistoryCard({
-  a, fmt, t, photoUrl, videoUrl,
+  a, fmtFull, t, onOpen,
 }: {
   a: AlertRow;
-  fmt: (iso: string) => string;
+  fmtFull: (iso: string) => string;
   t: (k: string) => string;
-  photoUrl: (path: string) => Promise<string | null>;
-  videoUrl: (path: string) => Promise<string | null>;
+  onOpen: () => void;
 }) {
-  const openPhoto = async (path: string | null) => {
-    if (!path) return;
-    const url = await photoUrl(path);
-    if (url) window.open(url, "_blank");
-    else toast.error("Could not load photo");
-  };
-  const openVideo = async () => {
-    if (!a.video_url) return;
-    const url = await videoUrl(a.video_url);
-    if (url) window.open(url, "_blank");
-    else toast.error("Could not load video");
-  };
-  const hasMedia = a.photo1_url || a.photo2_url || a.video_url;
+  const takenAt = a.confirmed_at ?? a.resolved_at ?? a.due_at;
   return (
-    <div className="bg-card rounded-xl p-3 mb-2 border border-border opacity-90">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full text-left bg-card rounded-xl p-3 mb-2 border border-border opacity-90 hover:bg-green-l/40 active:scale-[0.99] transition"
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="font-bold text-fs-sm truncate">{a.med_name}</div>
-          <div className="text-fs-xs text-muted-foreground">{fmt(a.due_at)}</div>
+          <div className="text-fs-xs text-muted-foreground">
+            {a.status === "confirmed" ? "Taken at " : "Resolved at "} {fmtFull(takenAt)}
+          </div>
         </div>
         <span className="bg-green-l text-green text-fs-xs font-bold px-2.5 py-1 rounded-full shrink-0">
           ✓ {a.status === "confirmed" ? "Taken" : t("alert_resolved")}
         </span>
       </div>
-      {hasMedia && (
-        <div className="flex gap-2 mt-2 flex-wrap">
-          {a.photo1_url && (
-            <button
-              onClick={() => openPhoto(a.photo1_url)}
-              className="text-fs-xs font-bold px-2.5 py-1 rounded-full bg-background border border-border"
-            >
-              📷 Photo 1
-            </button>
-          )}
-          {a.photo2_url && (
-            <button
-              onClick={() => openPhoto(a.photo2_url)}
-              className="text-fs-xs font-bold px-2.5 py-1 rounded-full bg-background border border-border"
-            >
-              📷 Photo 2
-            </button>
-          )}
-          {a.video_url && (
-            <button
-              onClick={openVideo}
-              className="text-fs-xs font-bold px-2.5 py-1 rounded-full bg-background border border-border"
-            >
-              🎥 Video
-            </button>
-          )}
+      <div className="text-fs-xs text-green font-bold mt-1.5">View details →</div>
+    </button>
+  );
+}
+
+function DetailModal({
+  a, onClose, photoUrl, videoUrl, fmtFull,
+}: {
+  a: AlertRow;
+  onClose: () => void;
+  photoUrl: (path: string) => Promise<string | null>;
+  videoUrl: (path: string) => Promise<string | null>;
+  fmtFull: (iso: string) => string;
+}) {
+  const [p1, setP1] = useState<string | null>(null);
+  const [p2, setP2] = useState<string | null>(null);
+  const [vid, setVid] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [u1, u2, uv] = await Promise.all([
+        a.photo1_url ? photoUrl(a.photo1_url) : Promise.resolve(null),
+        a.photo2_url ? photoUrl(a.photo2_url) : Promise.resolve(null),
+        a.video_url ? videoUrl(a.video_url) : Promise.resolve(null),
+      ]);
+      if (cancelled) return;
+      setP1(u1); setP2(u2); setVid(uv);
+    })();
+    return () => { cancelled = true; };
+  }, [a.photo1_url, a.photo2_url, a.video_url, photoUrl, videoUrl]);
+
+  const takenAt = a.confirmed_at ?? a.resolved_at ?? a.due_at;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[500] flex items-end justify-center" onClick={onClose}>
+      <div
+        className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+        <div className="font-display text-fs-xl font-semibold mb-1">{a.med_name}</div>
+        <div className="text-fs-xs text-muted-foreground mb-1">Patient: {a.patient_name}</div>
+        <div className="text-fs-xs text-muted-foreground mb-1">Scheduled: {fmtFull(a.due_at)}</div>
+        {a.confirmed_at && (
+          <div className="text-fs-sm text-green font-bold mb-4">✓ Taken at {fmtFull(a.confirmed_at)}</div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
+            {p1 ? (
+              <img src={p1} alt="Pill in hand" className="w-full rounded-xl border border-border object-cover aspect-square" />
+            ) : (
+              <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
+                {a.photo1_url ? "Loading…" : "No photo"}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Empty hand</div>
+            {p2 ? (
+              <img src={p2} alt="Empty hand" className="w-full rounded-xl border border-border object-cover aspect-square" />
+            ) : (
+              <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
+                {a.photo2_url ? "Loading…" : "No photo"}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        {vid && (
+          <a href={vid} target="_blank" rel="noopener noreferrer" className="block text-center bg-input-bg border border-border rounded-xl py-2.5 font-bold text-fs-sm mb-3">
+            🎥 Open video
+          </a>
+        )}
+
+        <button onClick={onClose} className="w-full bg-green text-white font-bold py-3 rounded-xl">
+          Close
+        </button>
+      </div>
     </div>
   );
 }
