@@ -202,7 +202,7 @@ function MedCard({
   );
 }
 
-function freqToDoses(f: string): number {
+export function freqToDoses(f: string): number {
   if (f === "Twice daily") return 2;
   if (f === "Three times daily") return 3;
   if (f === "Four times daily") return 4;
@@ -216,7 +216,7 @@ function fmtTime(t: string) {
   return (t || "").slice(0, 5);
 }
 
-function MedEditor({
+export function MedEditor({
   patientId,
   initial,
   onClose,
@@ -231,12 +231,26 @@ function MedEditor({
   const [dosage, setDosage] = useState(initial?.dosage ?? "");
   const [unit, setUnit] = useState(initial?.unit ?? "pills");
   const [freq, setFreq] = useState(initial?.frequency ?? "Once daily");
-  const [time, setTime] = useState(fmtTime(initial?.scheduled_time ?? "08:00:00"));
+  const [times, setTimes] = useState<string[]>(() => {
+    if (initial) return [fmtTime(initial.scheduled_time)];
+    return ["08:00"];
+  });
   const [totalQty, setTotalQty] = useState(String(initial?.total_qty ?? 30));
   const [remainingQty, setRemainingQty] = useState(String(initial?.remaining_qty ?? 30));
   const [refillDays, setRefillDays] = useState(String(initial?.refill_reminder_days ?? 7));
   const [showPicker, setShowPicker] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Sync times[] length with frequency (only for new entries; edits keep single time)
+  useEffect(() => {
+    if (initial) return;
+    const need = Math.max(1, Math.ceil(freqToDoses(freq) || 1));
+    setTimes((prev) => {
+      if (prev.length === need) return prev;
+      const defaults = ["08:00", "13:00", "19:00", "22:00"];
+      return Array.from({ length: need }, (_, i) => prev[i] ?? defaults[i] ?? "08:00");
+    });
+  }, [freq, initial]);
 
   const pickSuggestion = (s: MedSuggestion) => {
     setName(s.name);
@@ -261,22 +275,40 @@ function MedEditor({
       toast.error("Remaining must be 0–total");
       return;
     }
+    if (!times.every((tm) => /^\d{2}:\d{2}$/.test(tm))) {
+      toast.error("Invalid time");
+      return;
+    }
     setBusy(true);
-    const payload = {
+    const basePayload = {
       patient_id: patientId,
       med_name: name.trim(),
       dosage: dosage.trim(),
       frequency: freq,
-      scheduled_time: `${time}:00`,
       total_qty: total,
       remaining_qty: remaining,
       refill_reminder_days: Number.isFinite(refill) ? refill : 7,
       unit,
       active: true,
     };
-    const { error } = initial
-      ? await supabase.from("medications").update(payload).eq("id", initial.id)
-      : await supabase.from("medications").insert(payload);
+    let error;
+    if (initial) {
+      ({ error } = await supabase
+        .from("medications")
+        .update({ ...basePayload, scheduled_time: `${times[0]}:00` })
+        .eq("id", initial.id));
+    } else {
+      // Insert one row per time; split quantity across rows so refill math stays right
+      const perRow = Math.max(1, Math.ceil(total / times.length));
+      const perRem = Math.max(0, Math.ceil(remaining / times.length));
+      const rows = times.map((tm) => ({
+        ...basePayload,
+        scheduled_time: `${tm}:00`,
+        total_qty: perRow,
+        remaining_qty: perRem,
+      }));
+      ({ error } = await supabase.from("medications").insert(rows));
+    }
     setBusy(false);
     if (error) {
       toast.error(error.message);
@@ -339,8 +371,24 @@ function MedEditor({
           </select>
         </Field>
 
-        <Field label="Time">
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inp} />
+        <Field label={times.length > 1 ? `Times (${times.length} doses)` : "Time"}>
+          <div className="space-y-2">
+            {times.map((tm, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {times.length > 1 && (
+                  <span className="text-fs-xs text-muted-foreground w-14 shrink-0">Dose {i + 1}</span>
+                )}
+                <input
+                  type="time"
+                  value={tm}
+                  onChange={(e) =>
+                    setTimes((prev) => prev.map((x, idx) => (idx === i ? e.target.value : x)))
+                  }
+                  className={`${inp} flex-1`}
+                />
+              </div>
+            ))}
+          </div>
         </Field>
 
         <div className="grid grid-cols-3 gap-2.5">
