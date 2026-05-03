@@ -23,6 +23,7 @@ interface AlertRow {
   id: string;
   status: "pending" | "missed" | "confirmed";
   due_at: string;
+  confirmed_at: string | null;
   resolved_at: string | null;
   video_url: string | null;
   photo1_url: string | null;
@@ -56,7 +57,7 @@ function Page() {
       startOfDay.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("medication_logs")
-        .select("id, status, due_at, resolved_at, video_url, photo1_url, photo2_url, medication_id, medications(med_name)")
+        .select("id, status, due_at, confirmed_at, resolved_at, video_url, photo1_url, photo2_url, medication_id, medications(med_name)")
         .eq("patient_id", patientId)
         .gte("due_at", new Date(Date.now() - 7 * 86_400_000).toISOString())
         .order("due_at", { ascending: false });
@@ -83,6 +84,7 @@ function Page() {
             id: `synth-${m.id}`,
             status: "pending",
             due_at: info.dueAt.toISOString(),
+            confirmed_at: null,
             resolved_at: null,
             video_url: null,
             photo1_url: null,
@@ -101,6 +103,7 @@ function Page() {
           id: r.id,
           status: r.status,
           due_at: r.due_at,
+          confirmed_at: r.confirmed_at,
           resolved_at: r.resolved_at,
           video_url: r.video_url,
           photo1_url: r.photo1_url,
@@ -147,9 +150,13 @@ function Page() {
 
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString([], { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" });
+  const fmtFull = (iso: string) =>
+    new Date(iso).toLocaleString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "short", year: "numeric" });
 
   return (
     <AppShell title={t("alerts_title")}>
+        {/* Detail modal */}
+        <DetailGate photoUrl={photoUrl} videoUrl={videoUrl} fmtFull={fmtFull} />
       <div className="flex-1 px-4 pt-4 pb-24">
         {isSupervisor && <PatientSwitcher />}
         <div className="font-display text-fs-xl font-semibold mb-1">{t("alerts_title")}</div>
@@ -188,7 +195,7 @@ function Page() {
                   {t("alert_resolved")}
                 </div>
                 {history.slice(0, 20).map((a) => (
-                  <HistoryCard key={a.id} a={a} fmt={fmt} t={t} photoUrl={photoUrl} videoUrl={videoUrl} />
+                  <HistoryCard key={a.id} a={a} fmtFull={fmtFull} t={t} />
                 ))}
               </div>
             )}
