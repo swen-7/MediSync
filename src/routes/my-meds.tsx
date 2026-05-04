@@ -264,9 +264,16 @@ function Page() {
                     <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
                     <div className="text-fs-xs text-muted-foreground mt-0.5">{m.frequency} · {formatScheduledTime(m.scheduled_time, timeFmt)}</div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-fs-xs font-bold shrink-0 ${low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"}`}>
-                    {m.remaining_qty} {m.unit}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {loggedToday.has(m.id) && (
+                      <span className="px-2 py-1 rounded-full text-fs-xs font-bold bg-green-l text-green">
+                        ✓ {t("status_completed")}
+                      </span>
+                    )}
+                    <span className={`px-2.5 py-1 rounded-full text-fs-xs font-bold ${low ? "bg-amber-l text-amber" : "bg-teal-l text-teal"}`}>
+                      {m.remaining_qty} {m.unit}
+                    </span>
+                  </div>
                 </div>
                 {isDueOrLate && (
                   <button
