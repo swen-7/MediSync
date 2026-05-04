@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { usePatients } from "@/lib/patientContext";
 import { useTimeFormat, formatClock } from "@/store/usePingStore";
+import { ImageLightbox } from "@/components/ping/ImageLightbox";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
