@@ -308,6 +308,9 @@ function Page() {
           </>
         )}
       </div>
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
     </AppShell>
   );
 }
