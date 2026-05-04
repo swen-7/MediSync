@@ -59,6 +59,7 @@ function SettingsPage() {
 }
 
 function DisplayPrefsCard() {
+  const t = useT_hook();
   const { timeFormat, setTimeFormat } = usePingStore();
   return (
     <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
@@ -78,7 +79,7 @@ function DisplayPrefsCard() {
                   : "bg-input-bg text-foreground border-border hover:border-green"
               }`}
             >
-              {opt === "12h" ? "12-Hour (AM/PM)" : "24-Hour"}
+              {opt === "12h" ? t("time_format_12h") : t("time_format_24h")}
             </button>
           );
         })}
