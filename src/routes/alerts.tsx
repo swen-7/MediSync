@@ -8,6 +8,7 @@ import { usePatients } from "@/lib/patientContext";
 import { PatientSwitcher } from "@/components/ping/PatientSwitcher";
 import { computeWindow } from "@/lib/dueLogic";
 import { toast } from "sonner";
+import { ImageLightbox } from "@/components/ping/ImageLightbox";
 
 export const Route = createFileRoute("/alerts")({
   head: () => ({
@@ -307,6 +308,7 @@ function DetailModal({
   const [p1, setP1] = useState<string | null>(null);
   const [p2, setP2] = useState<string | null>(null);
   const [vid, setVid] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -342,7 +344,13 @@ function DetailModal({
           <div>
             <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
             {p1 ? (
-              <img src={p1} alt="Pill in hand" className="w-full rounded-xl border border-border object-cover aspect-square" />
+              <button
+                type="button"
+                onClick={() => setLightbox({ src: p1!, alt: "Pill in hand" })}
+                className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+              >
+                <img src={p1} alt="Pill in hand" className="w-full h-full object-contain" />
+              </button>
             ) : (
               <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
                 {a.photo1_url ? "Loading…" : "No photo"}
@@ -352,7 +360,13 @@ function DetailModal({
           <div>
             <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Empty hand</div>
             {p2 ? (
-              <img src={p2} alt="Empty hand" className="w-full rounded-xl border border-border object-cover aspect-square" />
+              <button
+                type="button"
+                onClick={() => setLightbox({ src: p2!, alt: "Medication bottle / pack" })}
+                className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+              >
+                <img src={p2} alt="Medication bottle / pack" className="w-full h-full object-contain" />
+              </button>
             ) : (
               <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
                 {a.photo2_url ? "Loading…" : "No photo"}
@@ -365,6 +379,10 @@ function DetailModal({
           <a href={vid} target="_blank" rel="noopener noreferrer" className="block text-center bg-input-bg border border-border rounded-xl py-2.5 font-bold text-fs-sm mb-3">
             🎥 Open video
           </a>
+        )}
+
+        {lightbox && (
+          <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
         )}
 
         <button onClick={onClose} className="w-full bg-green text-white font-bold py-3 rounded-xl">

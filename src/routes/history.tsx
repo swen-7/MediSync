@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/integrations/supabase/auth-provider";
 import { usePatients } from "@/lib/patientContext";
 import { useTimeFormat, formatClock } from "@/store/usePingStore";
+import { ImageLightbox } from "@/components/ping/ImageLightbox";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -46,6 +47,7 @@ function Page() {
   const [medLogs, setMedLogs] = useState<MedLogRow[]>([]);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [logUrls, setLogUrls] = useState<Record<string, { p1: string | null; p2: string | null }>>({});
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Auto-pick first patient
@@ -266,7 +268,13 @@ function Page() {
                             <div>
                               <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
                               {urls.p1 ? (
-                                <img src={urls.p1} alt="Pill in hand" className="w-full rounded-xl border border-border object-cover aspect-square" />
+                                <button
+                                  type="button"
+                                  onClick={() => setLightbox({ src: urls.p1!, alt: "Pill in hand" })}
+                                  className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+                                >
+                                  <img src={urls.p1} alt="Pill in hand" className="w-full h-full object-contain" />
+                                </button>
                               ) : (
                                 <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
                                   Not available
@@ -274,9 +282,15 @@ function Page() {
                               )}
                             </div>
                             <div>
-                              <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Empty hand</div>
+                              <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Bottle / pack</div>
                               {urls.p2 ? (
-                                <img src={urls.p2} alt="Empty hand" className="w-full rounded-xl border border-border object-cover aspect-square" />
+                                <button
+                                  type="button"
+                                  onClick={() => setLightbox({ src: urls.p2!, alt: "Medication bottle / pack" })}
+                                  className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+                                >
+                                  <img src={urls.p2} alt="Medication bottle / pack" className="w-full h-full object-contain" />
+                                </button>
                               ) : (
                                 <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
                                   Not available
@@ -294,6 +308,9 @@ function Page() {
           </>
         )}
       </div>
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
     </AppShell>
   );
 }

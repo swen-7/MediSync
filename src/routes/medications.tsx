@@ -254,8 +254,11 @@ export function MedEditor({
 
   const pickSuggestion = (s: MedSuggestion) => {
     setName(s.name);
-    setDosage(s.dosage);
-    setUnit(s.unit);
+    // Strip non-numeric (suggestion dosages may contain "mg" etc.) so the
+    // amount column stays a clean number; force unit into our allowed list.
+    const num = (s.dosage ?? "").match(/[\d.]+/);
+    setDosage(num ? num[0] : "");
+    setUnit(UNITS.includes(s.unit) ? s.unit : "pills");
     setShowPicker(false);
   };
 
@@ -347,8 +350,17 @@ export function MedEditor({
         </Field>
 
         <div className="grid grid-cols-2 gap-2.5">
-          <Field label="Dosage">
-            <input value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="5mg" className={inp} />
+          <Field label="Dose amount">
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              value={dosage}
+              onChange={(e) => setDosage(e.target.value.replace(/[^0-9.]/g, ""))}
+              placeholder="1"
+              className={inp}
+            />
           </Field>
           <Field label="Unit">
             <select value={unit} onChange={(e) => setUnit(e.target.value)} className={inp}>
