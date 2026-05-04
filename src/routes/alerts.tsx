@@ -308,6 +308,7 @@ function DetailModal({
   const [p1, setP1] = useState<string | null>(null);
   const [p2, setP2] = useState<string | null>(null);
   const [vid, setVid] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,6 +379,10 @@ function DetailModal({
           <a href={vid} target="_blank" rel="noopener noreferrer" className="block text-center bg-input-bg border border-border rounded-xl py-2.5 font-bold text-fs-sm mb-3">
             🎥 Open video
           </a>
+        )}
+
+        {lightbox && (
+          <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
         )}
 
         <button onClick={onClose} className="w-full bg-green text-white font-bold py-3 rounded-xl">
