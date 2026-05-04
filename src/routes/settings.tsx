@@ -8,6 +8,7 @@ import { z } from "zod";
 import { useT_hook } from "@/store/usePingStore";
 import { usePingStore } from "@/store/usePingStore";
 import { usePatients } from "@/lib/patientContext";
+import { deleteMyAccount } from "@/server/account.functions";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -50,7 +51,8 @@ function SettingsPage() {
         <DisplayPrefsCard />
         <LinkAccountCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
-        {profile.role === "supervisor" && <DeveloperResetCard />}
+        {profile.role === "patient" && <SupervisorWhatsAppCard patientId={profile.id} />}
+        <DangerZoneCard />
       </div>
     </AppShell>
   );
