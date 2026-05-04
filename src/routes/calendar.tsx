@@ -176,8 +176,8 @@ function Page() {
   const list = selDate ? selEvents : upcoming;
   const canAdd = !!activePatientId; // both supervisors (for selected patient) and patients can add
   const emptyMsg = isSup
-    ? "No upcoming events scheduled. Click '+' to add an appointment or reminder."
-    : "No upcoming events scheduled.";
+    ? `${t("no_upcoming_events")} ${t("calendar_add_hint") || ""}`.trim()
+    : t("no_upcoming_events");
 
   return (
     <AppShell title={t("calendar_title")}>
