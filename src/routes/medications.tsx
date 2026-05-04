@@ -254,8 +254,11 @@ export function MedEditor({
 
   const pickSuggestion = (s: MedSuggestion) => {
     setName(s.name);
-    setDosage(s.dosage);
-    setUnit(s.unit);
+    // Strip non-numeric (suggestion dosages may contain "mg" etc.) so the
+    // amount column stays a clean number; force unit into our allowed list.
+    const num = (s.dosage ?? "").match(/[\d.]+/);
+    setDosage(num ? num[0] : "");
+    setUnit(UNITS.includes(s.unit) ? s.unit : "pills");
     setShowPicker(false);
   };
 
