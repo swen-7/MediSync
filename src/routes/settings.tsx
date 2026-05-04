@@ -456,6 +456,121 @@ function DeveloperResetCard() {
   );
 }
 
+function SupervisorWhatsAppCard({ patientId }: { patientId: string }) {
+  const t = useT_hook();
+  const [phones, setPhones] = useState<{ name: string; phone: string }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: links } = await supabase
+        .from("patients_supervisors")
+        .select("supervisor_id")
+        .eq("patient_id", patientId);
+      const ids = (links ?? []).map((l) => l.supervisor_id);
+      if (ids.length === 0) return setPhones([]);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .in("id", ids);
+      setPhones(
+        (profs ?? [])
+          .filter((p) => p.phone && p.phone.trim())
+          .map((p) => ({ name: p.full_name, phone: p.phone as string })),
+      );
+    })();
+  }, [patientId]);
+
+  if (phones.length === 0) return null;
+  return (
+    <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border">
+      <div className="font-extrabold text-fs-sm mb-3">{t("settings_supervisor_contacts")}</div>
+      <div className="space-y-2">
+        {phones.map((p) => {
+          const num = p.phone.replace(/\D+/g, "").replace(/^0+/, "");
+          return (
+            <a
+              key={p.phone}
+              href={`https://wa.me/${num}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between bg-green-l text-green font-bold py-3 px-4 rounded-xl"
+            >
+              <span className="truncate">💬 {p.name}</span>
+              <span className="text-fs-xs">{t("settings_whatsapp_open")}</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function DangerZoneCard() {
+  const t = useT_hook();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [text, setText] = useState("");
+
+  const doDelete = async () => {
+    if (text.trim().toUpperCase() !== "DELETE") {
+      toast.error(t("danger_type_delete"));
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteMyAccount();
+      await supabase.auth.signOut();
+      toast.success(t("danger_deleted"));
+      navigate({ to: "/" });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete account");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border-2 border-red">
+      <div className="font-extrabold text-fs-sm mb-1 text-red">⚠ {t("danger_zone")}</div>
+      <p className="text-fs-xs text-muted-foreground mb-3">{t("danger_desc")}</p>
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          className="w-full bg-red text-white font-bold py-3 rounded-xl text-fs-sm"
+        >
+          {t("danger_delete_account")}
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-fs-xs font-bold text-red">{t("danger_confirm_prompt")}</p>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="DELETE"
+            className={inp}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setConfirming(false); setText(""); }}
+              disabled={busy}
+              className="flex-1 bg-input-bg border border-border font-bold py-2.5 rounded-xl text-fs-sm"
+            >
+              {t("cancel")}
+            </button>
+            <button
+              onClick={doDelete}
+              disabled={busy}
+              className="flex-1 bg-red text-white font-bold py-2.5 rounded-xl text-fs-sm disabled:opacity-50"
+            >
+              {busy ? "…" : t("danger_delete_account")}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block mb-3">
