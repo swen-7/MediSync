@@ -30,14 +30,20 @@ export function useAlertsCount(): number {
         return;
       }
       const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
-      const { count: c } = await supabase
+      const { count: medCount } = await supabase
         .from("medication_logs")
         .select("id", { count: "exact", head: true })
         .in("patient_id", ids)
         .in("status", ["pending", "missed"])
         .is("resolved_at", null)
         .gte("due_at", since);
-      if (!cancelled) setCount(c ?? 0);
+      const { count: vitalCount } = await supabase
+        .from("vitals")
+        .select("id", { count: "exact", head: true })
+        .in("patient_id", ids)
+        .is("acknowledged_at", null)
+        .gte("taken_at", since);
+      if (!cancelled) setCount((medCount ?? 0) + (vitalCount ?? 0));
     };
 
     load();
@@ -48,6 +54,11 @@ export function useAlertsCount(): number {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "medication_logs" },
+        () => load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vitals" },
         () => load(),
       )
       .subscribe();

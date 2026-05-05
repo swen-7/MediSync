@@ -101,7 +101,7 @@ function Page() {
       if (!profile?.id) return;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
-      const [{ data: medsData, error }, { data: logsData }, { data: vitalsData }, { data: settings }] = await Promise.all([
+      const [{ data: medsData, error }, { data: logsData }, { data: vitalsData }, { data: links }] = await Promise.all([
         supabase
           .from("medications")
           .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
@@ -115,15 +115,27 @@ function Page() {
           .select("id, blood_pressure_sys, blood_pressure_dia, pulse, blood_glucose, taken_at, note")
           .eq("patient_id", profile.id).order("taken_at", { ascending: false }).limit(20),
         supabase
-          .from("patient_settings")
-          .select("caregiver_phone")
-          .eq("patient_id", profile.id).maybeSingle(),
+          .from("patients_supervisors")
+          .select("supervisor_id")
+          .eq("patient_id", profile.id),
       ]);
       if (error) toast.error(error.message);
       setMeds((medsData ?? []) as MyMed[]);
       setLoggedToday(new Set((logsData ?? []).map((l) => l.medication_id)));
       setVitals((vitalsData ?? []) as DbVital[]);
-      setSupervisorPhone(settings?.caregiver_phone ?? "");
+
+      // Auto-fetch linked supervisor's phone from their profile
+      const supIds = (links ?? []).map((l) => l.supervisor_id);
+      if (supIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("phone")
+          .in("id", supIds);
+        const firstPhone = (profs ?? []).find((p) => p.phone && p.phone.trim())?.phone ?? "";
+        setSupervisorPhone(firstPhone);
+      } else {
+        setSupervisorPhone("");
+      }
       setLoading(false);
 
       // Streak evaluation runs in background after page load
@@ -195,6 +207,7 @@ function Page() {
   // re-open it later from the med card's "Check in" button.
   const [postponed, setPostponed] = useState<Set<string>>(new Set());
   const [forceOpenMedId, setForceOpenMedId] = useState<string | null>(null);
+  const [earlyMed, setEarlyMed] = useState<MyMed | null>(null);
   const dueKey = dueMed ? `${dueMed.med.id}|${dueMed.info.dueAt.toISOString()}` : null;
   const hideDueTakeover = !!(dueKey && postponed.has(dueKey) && forceOpenMedId !== dueMed?.med.id);
 
@@ -257,8 +270,16 @@ function Page() {
             const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
             const info = computeWindow(now, m.scheduled_time);
             const isDueOrLate = !loggedToday.has(m.id) && (info.state === "due" || info.state === "overdue");
+            const isFutureToday =
+              !loggedToday.has(m.id) && (info.state === "idle" || info.state === "approaching");
             return (
-              <div key={m.id} className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
+              <div
+                key={m.id}
+                onClick={isFutureToday ? () => setEarlyMed(m) : undefined}
+                className={`bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5 ${
+                  isFutureToday ? "cursor-pointer hover:bg-green-l/30 transition-colors" : ""
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
@@ -278,7 +299,8 @@ function Page() {
                 {isDueOrLate && (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       // Re-open the DueTakeover for this med even if it was postponed.
                       const k = `${m.id}|${info.dueAt.toISOString()}`;
                       setPostponed((s) => {
@@ -293,6 +315,9 @@ function Page() {
                   >
                     ✓ Check in now
                   </button>
+                )}
+                {isFutureToday && (
+                  <div className="mt-2 text-fs-xs text-green font-bold">Tap for early check-in →</div>
                 )}
               </div>
             );
@@ -394,7 +419,65 @@ function Page() {
           }}
         />
       )}
+
+      {earlyMed && (
+        <EarlyConsumptionModal
+          medName={earlyMed.med_name}
+          onClose={() => setEarlyMed(null)}
+          onLogEarly={() => {
+            const med = earlyMed;
+            setEarlyMed(null);
+            // Force-open DueTakeover for this med
+            const info = computeWindow(new Date(), med.scheduled_time);
+            const k = `${med.id}|${info.dueAt.toISOString()}`;
+            setPostponed((s) => {
+              if (!s.has(k)) return s;
+              const next = new Set(s);
+              next.delete(k);
+              return next;
+            });
+            setForceOpenMedId(med.id);
+          }}
+        />
+      )}
     </AppShell>
+  );
+}
+
+function EarlyConsumptionModal({
+  medName,
+  onClose,
+  onLogEarly,
+}: {
+  medName: string;
+  onClose: () => void;
+  onLogEarly: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[450] flex items-end justify-center" onClick={onClose}>
+      <div
+        className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 shadow-[0_-4px_24px_rgba(0,0,0,0.2)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+        <div className="font-display text-fs-xl font-semibold mb-1">{medName}</div>
+        <p className="text-fs-sm text-muted-foreground mb-5">
+          This medication is scheduled for later. What would you like to do?
+        </p>
+        <button
+          onClick={onLogEarly}
+          className="w-full bg-green text-white font-extrabold py-3 rounded-xl text-fs-sm mb-2"
+        >
+          ⏱ Log Early Consumption
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full bg-input-bg border border-border text-foreground font-bold py-3 rounded-xl text-fs-sm"
+        >
+          🔔 Next Schedule Reminder
+        </button>
+      </div>
+    </div>
   );
 }
 

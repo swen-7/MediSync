@@ -22,7 +22,7 @@ export const Route = createFileRoute("/alerts")({
 
 interface AlertRow {
   id: string;
-  status: "pending" | "missed" | "confirmed";
+  status: "pending" | "missed" | "confirmed" | "vital";
   due_at: string;
   confirmed_at: string | null;
   resolved_at: string | null;
@@ -32,6 +32,8 @@ interface AlertRow {
   med_name: string;
   patient_name: string;
   patient_phone: string | null;
+  kind?: "med" | "vital";
+  vital_summary?: string;
 }
 
 function Page() {
@@ -57,13 +59,22 @@ function Page() {
       }
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
+      const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
       const { data, error } = await supabase
         .from("medication_logs")
         .select("id, status, due_at, confirmed_at, resolved_at, video_url, photo1_url, photo2_url, medication_id, medications(med_name)")
         .eq("patient_id", patientId)
-        .gte("due_at", new Date(Date.now() - 7 * 86_400_000).toISOString())
+        .gte("due_at", since)
         .order("due_at", { ascending: false });
       if (error) toast.error(error.message);
+
+      // Vitals alerts — any reading not yet acknowledged becomes an active alert
+      const { data: vitalsData } = await supabase
+        .from("vitals")
+        .select("id, taken_at, blood_pressure_sys, blood_pressure_dia, pulse, blood_glucose, acknowledged_at")
+        .eq("patient_id", patientId)
+        .gte("taken_at", since)
+        .order("taken_at", { ascending: false });
 
       // Auto-detect overdue meds (no log yet but past 15min window)
       const { data: meds } = await supabase
@@ -113,17 +124,43 @@ function Page() {
           med_name: medName ?? "Medication",
           patient_name: patientName,
           patient_phone: patientPhone,
+          kind: "med" as const,
         };
       });
 
-      setRows([...synthetic, ...real]);
+      const vitalRows: AlertRow[] = (vitalsData ?? []).map((v) => {
+        const parts: string[] = [];
+        if (v.blood_pressure_sys != null && v.blood_pressure_dia != null) {
+          parts.push(`BP ${v.blood_pressure_sys}/${v.blood_pressure_dia}`);
+        }
+        if (v.pulse != null) parts.push(`${v.pulse} bpm`);
+        if (v.blood_glucose != null) parts.push(`Glucose ${v.blood_glucose}`);
+        return {
+          id: `vital-${v.id}`,
+          status: "vital" as const,
+          due_at: v.taken_at,
+          confirmed_at: null,
+          resolved_at: v.acknowledged_at,
+          video_url: null,
+          photo1_url: null,
+          photo2_url: null,
+          med_name: `🩺 New vitals reading`,
+          patient_name: patientName,
+          patient_phone: patientPhone,
+          kind: "vital" as const,
+          vital_summary: parts.join(" · ") || "Recorded",
+        };
+      });
+
+      setRows([...synthetic, ...real, ...vitalRows]);
       setLoading(false);
     };
     load();
   }, [profile?.id, isSupervisor, selected?.id, reload]);
 
   const active = rows.filter(
-    (r) => (r.status === "pending" || r.status === "missed") && !r.resolved_at,
+    (r) =>
+      ((r.status === "pending" || r.status === "missed" || r.status === "vital") && !r.resolved_at),
   );
   const history = isSupervisor
     ? []
@@ -133,6 +170,16 @@ function Page() {
     if (id.startsWith("synth-")) {
       // Synthetic overdue alert — no DB row to resolve. Just hide locally.
       setRows((rs) => rs.filter((r) => r.id !== id));
+      return;
+    }
+    if (id.startsWith("vital-")) {
+      const vitalId = id.slice("vital-".length);
+      const { error } = await supabase
+        .from("vitals")
+        .update({ acknowledged_at: new Date().toISOString() })
+        .eq("id", vitalId);
+      if (error) toast.error(error.message);
+      else setReload((r) => r + 1);
       return;
     }
     const { error } = await supabase
@@ -234,8 +281,12 @@ function ActiveCard({
         <div className="min-w-0">
           <div className="font-extrabold text-fs-base text-red truncate">⚠️ {a.patient_name}</div>
           <div className="text-fs-sm text-foreground mt-0.5 truncate">{a.med_name}</div>
+          {a.vital_summary && (
+            <div className="text-fs-xs text-foreground mt-0.5 truncate">{a.vital_summary}</div>
+          )}
           <div className="text-fs-xs text-muted-foreground mt-1">
-            {fmt(a.due_at)} · {minsLate}m {t("alert_overdue")}
+            {fmt(a.due_at)}
+            {a.kind !== "vital" && ` · ${minsLate}m ${t("alert_overdue")}`}
           </div>
         </div>
         {a.video_url && (

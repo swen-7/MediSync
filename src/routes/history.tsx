@@ -45,8 +45,8 @@ function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [vitals, setVitals] = useState<VitalRow[]>([]);
   const [medLogs, setMedLogs] = useState<MedLogRow[]>([]);
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
-  const [logUrls, setLogUrls] = useState<Record<string, { p1: string | null; p2: string | null }>>({});
+  const [detailLog, setDetailLog] = useState<MedLogRow | null>(null);
+  const [detailUrls, setDetailUrls] = useState<{ p1: string | null; p2: string | null } | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -98,27 +98,22 @@ function Page() {
         };
       });
       setMedLogs(logs);
-      setExpandedLogId(null);
-      setLogUrls({});
+      setDetailLog(null);
+      setDetailUrls(null);
       setLoading(false);
     });
   }, [targetPatientId]);
 
   const toggleLog = async (log: MedLogRow) => {
-    if (expandedLogId === log.id) {
-      setExpandedLogId(null);
-      return;
-    }
-    setExpandedLogId(log.id);
-    if (!logUrls[log.id]) {
-      const sign = async (path: string | null) => {
-        if (!path) return null;
-        const { data } = await supabase.storage.from("med-photos").createSignedUrl(path, 300);
-        return data?.signedUrl ?? null;
-      };
-      const [p1, p2] = await Promise.all([sign(log.photo1_url), sign(log.photo2_url)]);
-      setLogUrls((m) => ({ ...m, [log.id]: { p1, p2 } }));
-    }
+    setDetailLog(log);
+    setDetailUrls(null);
+    const sign = async (path: string | null) => {
+      if (!path) return null;
+      const { data } = await supabase.storage.from("med-photos").createSignedUrl(path, 300);
+      return data?.signedUrl ?? null;
+    };
+    const [p1, p2] = await Promise.all([sign(log.photo1_url), sign(log.photo2_url)]);
+    setDetailUrls({ p1, p2 });
   };
 
   const fmt = (iso: string) => {
@@ -222,86 +217,35 @@ function Page() {
               </div>
             ) : (
               medLogs.map((l) => {
-                const expanded = expandedLogId === l.id;
-                const urls = logUrls[l.id];
                 const taken = l.confirmed_at ?? l.due_at;
-                const statusBadge =
-                  l.status === "confirmed" ? { cls: "bg-green-l text-green", label: "✓ Taken" }
-                  : l.status === "missed" ? { cls: "bg-red-l text-red", label: "✗ Missed" }
-                  : { cls: "bg-amber-l text-amber", label: "⏳ Pending" };
+                const statusLabel =
+                  l.status === "confirmed" ? "✓ Taken"
+                  : l.status === "missed" ? "✗ Missed"
+                  : "⏳ Pending";
+                const statusCls =
+                  l.status === "confirmed" ? "bg-green-l text-green"
+                  : l.status === "missed" ? "bg-red-l text-red"
+                  : "bg-amber-l text-amber";
                 return (
-                  <div key={l.id} className="bg-card rounded-2xl shadow-[var(--shadow-ping)] border border-border mb-2.5 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => toggleLog(l)}
-                      className="w-full text-left p-4 hover:bg-green-l/30 transition"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-bold text-fs-sm truncate">{l.med_name}</div>
-                          <div className="text-fs-xs text-muted-foreground mt-0.5">
-                            {l.status === "confirmed" ? "Taken at " : "Scheduled "} {fmt(taken)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-fs-xs font-bold px-2.5 py-1 rounded-full ${statusBadge.cls}`}>
-                            {statusBadge.label}
-                          </span>
-                          <span className="text-fs-xs text-green font-bold">{expanded ? "▲" : "▼"}</span>
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => toggleLog(l)}
+                    className="w-full text-left bg-card rounded-xl p-3 mb-2 border border-border hover:bg-green-l/40 active:scale-[0.99] transition"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-fs-sm truncate">{l.med_name}</div>
+                        <div className="text-fs-xs text-muted-foreground">
+                          {l.status === "confirmed" ? "Taken at " : "Scheduled "} {fmt(taken)}
                         </div>
                       </div>
-                      {!expanded && (l.photo1_url || l.photo2_url) && (
-                        <div className="text-fs-xs text-green font-bold mt-1.5">View more (photos) →</div>
-                      )}
-                    </button>
-                    {expanded && (
-                      <div className="px-4 pb-4 border-t border-border">
-                        <div className="text-fs-xs font-bold text-muted-foreground uppercase tracking-wider mt-3 mb-2">
-                          Photo Audit Trail
-                        </div>
-                        {!l.photo1_url && !l.photo2_url ? (
-                          <div className="text-fs-xs text-muted-foreground py-2">No photos for this log.</div>
-                        ) : !urls ? (
-                          <div className="text-fs-xs text-muted-foreground py-2">Loading photos…</div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
-                              {urls.p1 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setLightbox({ src: urls.p1!, alt: "Pill in hand" })}
-                                  className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
-                                >
-                                  <img src={urls.p1} alt="Pill in hand" className="w-full h-full object-contain" />
-                                </button>
-                              ) : (
-                                <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
-                                  Not available
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Bottle / pack</div>
-                              {urls.p2 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setLightbox({ src: urls.p2!, alt: "Medication bottle / pack" })}
-                                  className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
-                                >
-                                  <img src={urls.p2} alt="Medication bottle / pack" className="w-full h-full object-contain" />
-                                </button>
-                              ) : (
-                                <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
-                                  Not available
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                      <span className={`text-fs-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${statusCls}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <div className="text-fs-xs text-green font-bold mt-1.5">View details →</div>
+                  </button>
                 );
               })
             )}
@@ -310,6 +254,64 @@ function Page() {
       </div>
       {lightbox && (
         <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
+      {detailLog && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[500] flex items-end justify-center"
+          onClick={() => setDetailLog(null)}
+        >
+          <div
+            className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+            <div className="font-display text-fs-xl font-semibold mb-1">{detailLog.med_name}</div>
+            <div className="text-fs-xs text-muted-foreground mb-1">Scheduled: {fmt(detailLog.due_at)}</div>
+            {detailLog.confirmed_at && (
+              <div className="text-fs-sm text-green font-bold mb-4">✓ Taken at {fmt(detailLog.confirmed_at)}</div>
+            )}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
+                {detailUrls?.p1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ src: detailUrls.p1!, alt: "Pill in hand" })}
+                    className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+                  >
+                    <img src={detailUrls.p1} alt="Pill in hand" className="w-full h-full object-contain" />
+                  </button>
+                ) : (
+                  <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
+                    {detailLog.photo1_url ? "Loading…" : "No photo"}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Bottle / pack</div>
+                {detailUrls?.p2 ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ src: detailUrls.p2!, alt: "Medication bottle / pack" })}
+                    className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+                  >
+                    <img src={detailUrls.p2} alt="Medication bottle / pack" className="w-full h-full object-contain" />
+                  </button>
+                ) : (
+                  <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
+                    {detailLog.photo2_url ? "Loading…" : "No photo"}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setDetailLog(null)}
+              className="w-full bg-green text-white font-bold py-3 rounded-xl"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </AppShell>
   );
