@@ -222,86 +222,35 @@ function Page() {
               </div>
             ) : (
               medLogs.map((l) => {
-                const expanded = expandedLogId === l.id;
-                const urls = logUrls[l.id];
                 const taken = l.confirmed_at ?? l.due_at;
-                const statusBadge =
-                  l.status === "confirmed" ? { cls: "bg-green-l text-green", label: "✓ Taken" }
-                  : l.status === "missed" ? { cls: "bg-red-l text-red", label: "✗ Missed" }
-                  : { cls: "bg-amber-l text-amber", label: "⏳ Pending" };
+                const statusLabel =
+                  l.status === "confirmed" ? "✓ Taken"
+                  : l.status === "missed" ? "✗ Missed"
+                  : "⏳ Pending";
+                const statusCls =
+                  l.status === "confirmed" ? "bg-green-l text-green"
+                  : l.status === "missed" ? "bg-red-l text-red"
+                  : "bg-amber-l text-amber";
                 return (
-                  <div key={l.id} className="bg-card rounded-2xl shadow-[var(--shadow-ping)] border border-border mb-2.5 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => toggleLog(l)}
-                      className="w-full text-left p-4 hover:bg-green-l/30 transition"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-bold text-fs-sm truncate">{l.med_name}</div>
-                          <div className="text-fs-xs text-muted-foreground mt-0.5">
-                            {l.status === "confirmed" ? "Taken at " : "Scheduled "} {fmt(taken)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-fs-xs font-bold px-2.5 py-1 rounded-full ${statusBadge.cls}`}>
-                            {statusBadge.label}
-                          </span>
-                          <span className="text-fs-xs text-green font-bold">{expanded ? "▲" : "▼"}</span>
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => toggleLog(l)}
+                    className="w-full text-left bg-card rounded-xl p-3 mb-2 border border-border hover:bg-green-l/40 active:scale-[0.99] transition"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-fs-sm truncate">{l.med_name}</div>
+                        <div className="text-fs-xs text-muted-foreground">
+                          {l.status === "confirmed" ? "Taken at " : "Scheduled "} {fmt(taken)}
                         </div>
                       </div>
-                      {!expanded && (l.photo1_url || l.photo2_url) && (
-                        <div className="text-fs-xs text-green font-bold mt-1.5">View more (photos) →</div>
-                      )}
-                    </button>
-                    {expanded && (
-                      <div className="px-4 pb-4 border-t border-border">
-                        <div className="text-fs-xs font-bold text-muted-foreground uppercase tracking-wider mt-3 mb-2">
-                          Photo Audit Trail
-                        </div>
-                        {!l.photo1_url && !l.photo2_url ? (
-                          <div className="text-fs-xs text-muted-foreground py-2">No photos for this log.</div>
-                        ) : !urls ? (
-                          <div className="text-fs-xs text-muted-foreground py-2">Loading photos…</div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
-                              {urls.p1 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setLightbox({ src: urls.p1!, alt: "Pill in hand" })}
-                                  className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
-                                >
-                                  <img src={urls.p1} alt="Pill in hand" className="w-full h-full object-contain" />
-                                </button>
-                              ) : (
-                                <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
-                                  Not available
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Bottle / pack</div>
-                              {urls.p2 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setLightbox({ src: urls.p2!, alt: "Medication bottle / pack" })}
-                                  className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
-                                >
-                                  <img src={urls.p2} alt="Medication bottle / pack" className="w-full h-full object-contain" />
-                                </button>
-                              ) : (
-                                <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
-                                  Not available
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                      <span className={`text-fs-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${statusCls}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                    <div className="text-fs-xs text-green font-bold mt-1.5">View details →</div>
+                  </button>
                 );
               })
             )}
