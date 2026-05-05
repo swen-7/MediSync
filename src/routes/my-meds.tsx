@@ -101,7 +101,7 @@ function Page() {
       if (!profile?.id) return;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
-      const [{ data: medsData, error }, { data: logsData }, { data: vitalsData }, { data: settings }] = await Promise.all([
+      const [{ data: medsData, error }, { data: logsData }, { data: vitalsData }, { data: links }] = await Promise.all([
         supabase
           .from("medications")
           .select("id, med_name, dosage, frequency, scheduled_time, remaining_qty, refill_reminder_days, unit")
@@ -115,15 +115,27 @@ function Page() {
           .select("id, blood_pressure_sys, blood_pressure_dia, pulse, blood_glucose, taken_at, note")
           .eq("patient_id", profile.id).order("taken_at", { ascending: false }).limit(20),
         supabase
-          .from("patient_settings")
-          .select("caregiver_phone")
-          .eq("patient_id", profile.id).maybeSingle(),
+          .from("patients_supervisors")
+          .select("supervisor_id")
+          .eq("patient_id", profile.id),
       ]);
       if (error) toast.error(error.message);
       setMeds((medsData ?? []) as MyMed[]);
       setLoggedToday(new Set((logsData ?? []).map((l) => l.medication_id)));
       setVitals((vitalsData ?? []) as DbVital[]);
-      setSupervisorPhone(settings?.caregiver_phone ?? "");
+
+      // Auto-fetch linked supervisor's phone from their profile
+      const supIds = (links ?? []).map((l) => l.supervisor_id);
+      if (supIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("phone")
+          .in("id", supIds);
+        const firstPhone = (profs ?? []).find((p) => p.phone && p.phone.trim())?.phone ?? "";
+        setSupervisorPhone(firstPhone);
+      } else {
+        setSupervisorPhone("");
+      }
       setLoading(false);
 
       // Streak evaluation runs in background after page load
