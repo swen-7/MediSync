@@ -30,6 +30,7 @@ interface Med {
   remaining_qty: number;
   refill_reminder_days: number;
   unit: string;
+  meal_timing: string;
   active: boolean;
 }
 
