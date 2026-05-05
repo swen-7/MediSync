@@ -159,7 +159,8 @@ function Page() {
   }, [profile?.id, isSupervisor, selected?.id, reload]);
 
   const active = rows.filter(
-    (r) => (r.status === "pending" || r.status === "missed") && !r.resolved_at,
+    (r) =>
+      ((r.status === "pending" || r.status === "missed" || r.status === "vital") && !r.resolved_at),
   );
   const history = isSupervisor
     ? []
@@ -169,6 +170,16 @@ function Page() {
     if (id.startsWith("synth-")) {
       // Synthetic overdue alert — no DB row to resolve. Just hide locally.
       setRows((rs) => rs.filter((r) => r.id !== id));
+      return;
+    }
+    if (id.startsWith("vital-")) {
+      const vitalId = id.slice("vital-".length);
+      const { error } = await supabase
+        .from("vitals")
+        .update({ acknowledged_at: new Date().toISOString() })
+        .eq("id", vitalId);
+      if (error) toast.error(error.message);
+      else setReload((r) => r + 1);
       return;
     }
     const { error } = await supabase
