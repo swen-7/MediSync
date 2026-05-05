@@ -207,6 +207,7 @@ function Page() {
   // re-open it later from the med card's "Check in" button.
   const [postponed, setPostponed] = useState<Set<string>>(new Set());
   const [forceOpenMedId, setForceOpenMedId] = useState<string | null>(null);
+  const [earlyMed, setEarlyMed] = useState<MyMed | null>(null);
   const dueKey = dueMed ? `${dueMed.med.id}|${dueMed.info.dueAt.toISOString()}` : null;
   const hideDueTakeover = !!(dueKey && postponed.has(dueKey) && forceOpenMedId !== dueMed?.med.id);
 
@@ -269,8 +270,16 @@ function Page() {
             const low = daysLeft !== null && daysLeft <= m.refill_reminder_days;
             const info = computeWindow(now, m.scheduled_time);
             const isDueOrLate = !loggedToday.has(m.id) && (info.state === "due" || info.state === "overdue");
+            const isFutureToday =
+              !loggedToday.has(m.id) && (info.state === "idle" || info.state === "approaching");
             return (
-              <div key={m.id} className="bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5">
+              <div
+                key={m.id}
+                onClick={isFutureToday ? () => setEarlyMed(m) : undefined}
+                className={`bg-card rounded-2xl p-4 shadow-[var(--shadow-ping)] border border-border mb-2.5 ${
+                  isFutureToday ? "cursor-pointer hover:bg-green-l/30 transition-colors" : ""
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <div className="font-extrabold text-fs-base truncate">{m.med_name}</div>
@@ -290,7 +299,8 @@ function Page() {
                 {isDueOrLate && (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       // Re-open the DueTakeover for this med even if it was postponed.
                       const k = `${m.id}|${info.dueAt.toISOString()}`;
                       setPostponed((s) => {
@@ -305,6 +315,9 @@ function Page() {
                   >
                     ✓ Check in now
                   </button>
+                )}
+                {isFutureToday && (
+                  <div className="mt-2 text-fs-xs text-green font-bold">Tap for early check-in →</div>
                 )}
               </div>
             );
