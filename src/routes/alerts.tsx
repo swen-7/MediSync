@@ -124,10 +124,35 @@ function Page() {
           med_name: medName ?? "Medication",
           patient_name: patientName,
           patient_phone: patientPhone,
+          kind: "med" as const,
         };
       });
 
-      setRows([...synthetic, ...real]);
+      const vitalRows: AlertRow[] = (vitalsData ?? []).map((v) => {
+        const parts: string[] = [];
+        if (v.blood_pressure_sys != null && v.blood_pressure_dia != null) {
+          parts.push(`BP ${v.blood_pressure_sys}/${v.blood_pressure_dia}`);
+        }
+        if (v.pulse != null) parts.push(`${v.pulse} bpm`);
+        if (v.blood_glucose != null) parts.push(`Glucose ${v.blood_glucose}`);
+        return {
+          id: `vital-${v.id}`,
+          status: "vital" as const,
+          due_at: v.taken_at,
+          confirmed_at: null,
+          resolved_at: v.acknowledged_at,
+          video_url: null,
+          photo1_url: null,
+          photo2_url: null,
+          med_name: `🩺 New vitals reading`,
+          patient_name: patientName,
+          patient_phone: patientPhone,
+          kind: "vital" as const,
+          vital_summary: parts.join(" · ") || "Recorded",
+        };
+      });
+
+      setRows([...synthetic, ...real, ...vitalRows]);
       setLoading(false);
     };
     load();
