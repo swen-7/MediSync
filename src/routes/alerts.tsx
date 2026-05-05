@@ -22,7 +22,7 @@ export const Route = createFileRoute("/alerts")({
 
 interface AlertRow {
   id: string;
-  status: "pending" | "missed" | "confirmed";
+  status: "pending" | "missed" | "confirmed" | "vital";
   due_at: string;
   confirmed_at: string | null;
   resolved_at: string | null;
@@ -32,6 +32,8 @@ interface AlertRow {
   med_name: string;
   patient_name: string;
   patient_phone: string | null;
+  kind?: "med" | "vital";
+  vital_summary?: string;
 }
 
 function Page() {
