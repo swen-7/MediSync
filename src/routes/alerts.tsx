@@ -59,13 +59,22 @@ function Page() {
       }
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
+      const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
       const { data, error } = await supabase
         .from("medication_logs")
         .select("id, status, due_at, confirmed_at, resolved_at, video_url, photo1_url, photo2_url, medication_id, medications(med_name)")
         .eq("patient_id", patientId)
-        .gte("due_at", new Date(Date.now() - 7 * 86_400_000).toISOString())
+        .gte("due_at", since)
         .order("due_at", { ascending: false });
       if (error) toast.error(error.message);
+
+      // Vitals alerts — any reading not yet acknowledged becomes an active alert
+      const { data: vitalsData } = await supabase
+        .from("vitals")
+        .select("id, taken_at, blood_pressure_sys, blood_pressure_dia, pulse, blood_glucose, acknowledged_at")
+        .eq("patient_id", patientId)
+        .gte("taken_at", since)
+        .order("taken_at", { ascending: false });
 
       // Auto-detect overdue meds (no log yet but past 15min window)
       const { data: meds } = await supabase
