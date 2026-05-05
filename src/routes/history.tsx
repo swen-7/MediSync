@@ -255,6 +255,64 @@ function Page() {
       {lightbox && (
         <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
       )}
+      {detailLog && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[500] flex items-end justify-center"
+          onClick={() => setDetailLog(null)}
+        >
+          <div
+            className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+            <div className="font-display text-fs-xl font-semibold mb-1">{detailLog.med_name}</div>
+            <div className="text-fs-xs text-muted-foreground mb-1">Scheduled: {fmt(detailLog.due_at)}</div>
+            {detailLog.confirmed_at && (
+              <div className="text-fs-sm text-green font-bold mb-4">✓ Taken at {fmt(detailLog.confirmed_at)}</div>
+            )}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 1 · Pill in hand</div>
+                {detailUrls?.p1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ src: detailUrls.p1!, alt: "Pill in hand" })}
+                    className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+                  >
+                    <img src={detailUrls.p1} alt="Pill in hand" className="w-full h-full object-contain" />
+                  </button>
+                ) : (
+                  <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
+                    {detailLog.photo1_url ? "Loading…" : "No photo"}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-fs-xs font-bold text-muted-foreground mb-1.5">Photo 2 · Bottle / pack</div>
+                {detailUrls?.p2 ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ src: detailUrls.p2!, alt: "Medication bottle / pack" })}
+                    className="w-full aspect-square rounded-xl border border-border bg-black/5 overflow-hidden"
+                  >
+                    <img src={detailUrls.p2} alt="Medication bottle / pack" className="w-full h-full object-contain" />
+                  </button>
+                ) : (
+                  <div className="w-full aspect-square rounded-xl border border-border bg-input-bg flex items-center justify-center text-fs-xs text-muted-foreground">
+                    {detailLog.photo2_url ? "Loading…" : "No photo"}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setDetailLog(null)}
+              className="w-full bg-green text-white font-bold py-3 rounded-xl"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
