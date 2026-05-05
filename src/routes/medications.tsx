@@ -30,6 +30,7 @@ interface Med {
   remaining_qty: number;
   refill_reminder_days: number;
   unit: string;
+  meal_timing: string;
   active: boolean;
 }
 
@@ -169,6 +170,9 @@ function MedCard({
           <div className="text-fs-xs text-muted-foreground mt-0.5">
             {med.dosage} · {med.frequency} · {formatScheduledTime(med.scheduled_time, timeFmt)}
           </div>
+          {med.meal_timing && med.meal_timing !== "N/A" && (
+            <div className="text-fs-xs text-green font-bold mt-0.5">🍽 {med.meal_timing}</div>
+          )}
           <div className="flex items-center gap-2 mt-2">
             <span
               className={`px-2 py-0.5 rounded-full text-[0.7rem] font-bold ${
@@ -231,6 +235,7 @@ export function MedEditor({
   const [dosage, setDosage] = useState(initial?.dosage ?? "");
   const [unit, setUnit] = useState(initial?.unit ?? "pills");
   const [freq, setFreq] = useState(initial?.frequency ?? "Once daily");
+  const [mealTiming, setMealTiming] = useState(initial?.meal_timing ?? "N/A");
   const [times, setTimes] = useState<string[]>(() => {
     if (initial) return [fmtTime(initial.scheduled_time)];
     return ["08:00"];
@@ -292,6 +297,7 @@ export function MedEditor({
       remaining_qty: remaining,
       refill_reminder_days: Number.isFinite(refill) ? refill : 7,
       unit,
+      meal_timing: mealTiming,
       active: true,
     };
     let error;
@@ -380,6 +386,14 @@ export function MedEditor({
                 {f}
               </option>
             ))}
+          </select>
+        </Field>
+
+        <Field label="Meal timing">
+          <select value={mealTiming} onChange={(e) => setMealTiming(e.target.value)} className={inp}>
+            <option value="Before Meals">Before Meals</option>
+            <option value="After Meals">After Meals</option>
+            <option value="N/A">N/A</option>
           </select>
         </Field>
 

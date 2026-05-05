@@ -125,7 +125,9 @@ function Page() {
   const active = rows.filter(
     (r) => (r.status === "pending" || r.status === "missed") && !r.resolved_at,
   );
-  const history = rows.filter((r) => r.status === "confirmed" || r.resolved_at);
+  const history = isSupervisor
+    ? []
+    : rows.filter((r) => r.status === "confirmed" || r.resolved_at);
 
   const resolve = async (id: string) => {
     if (id.startsWith("synth-")) {

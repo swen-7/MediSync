@@ -480,10 +480,16 @@ function DangerZoneCard() {
     }
     setBusy(true);
     try {
-      await deleteMyAccount();
+      // Try server function first (uses admin client). Fall back to RPC.
+      try {
+        await deleteMyAccount();
+      } catch (serverErr) {
+        const { error: rpcErr } = await supabase.rpc("delete_user_account");
+        if (rpcErr) throw serverErr;
+      }
       await supabase.auth.signOut();
       toast.success(t("danger_deleted"));
-      navigate({ to: "/" });
+      navigate({ to: "/login" });
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to delete account");
       setBusy(false);
