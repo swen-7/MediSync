@@ -235,6 +235,7 @@ export function MedEditor({
   const [dosage, setDosage] = useState(initial?.dosage ?? "");
   const [unit, setUnit] = useState(initial?.unit ?? "pills");
   const [freq, setFreq] = useState(initial?.frequency ?? "Once daily");
+  const [mealTiming, setMealTiming] = useState(initial?.meal_timing ?? "N/A");
   const [times, setTimes] = useState<string[]>(() => {
     if (initial) return [fmtTime(initial.scheduled_time)];
     return ["08:00"];
@@ -296,6 +297,7 @@ export function MedEditor({
       remaining_qty: remaining,
       refill_reminder_days: Number.isFinite(refill) ? refill : 7,
       unit,
+      meal_timing: mealTiming,
       active: true,
     };
     let error;
