@@ -419,7 +419,65 @@ function Page() {
           }}
         />
       )}
+
+      {earlyMed && (
+        <EarlyConsumptionModal
+          medName={earlyMed.med_name}
+          onClose={() => setEarlyMed(null)}
+          onLogEarly={() => {
+            const med = earlyMed;
+            setEarlyMed(null);
+            // Force-open DueTakeover for this med
+            const info = computeWindow(new Date(), med.scheduled_time);
+            const k = `${med.id}|${info.dueAt.toISOString()}`;
+            setPostponed((s) => {
+              if (!s.has(k)) return s;
+              const next = new Set(s);
+              next.delete(k);
+              return next;
+            });
+            setForceOpenMedId(med.id);
+          }}
+        />
+      )}
     </AppShell>
+  );
+}
+
+function EarlyConsumptionModal({
+  medName,
+  onClose,
+  onLogEarly,
+}: {
+  medName: string;
+  onClose: () => void;
+  onLogEarly: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[450] flex items-end justify-center" onClick={onClose}>
+      <div
+        className="bg-card w-full max-w-[480px] rounded-t-3xl p-5 pb-8 shadow-[0_-4px_24px_rgba(0,0,0,0.2)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-border rounded-full mx-auto mb-4" />
+        <div className="font-display text-fs-xl font-semibold mb-1">{medName}</div>
+        <p className="text-fs-sm text-muted-foreground mb-5">
+          This medication is scheduled for later. What would you like to do?
+        </p>
+        <button
+          onClick={onLogEarly}
+          className="w-full bg-green text-white font-extrabold py-3 rounded-xl text-fs-sm mb-2"
+        >
+          ⏱ Log Early Consumption
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full bg-input-bg border border-border text-foreground font-bold py-3 rounded-xl text-fs-sm"
+        >
+          🔔 Next Schedule Reminder
+        </button>
+      </div>
+    </div>
   );
 }
 
