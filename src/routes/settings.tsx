@@ -51,7 +51,6 @@ function SettingsPage() {
         <DisplayPrefsCard />
         <LinkAccountCard />
         {profile.role === "patient" && <PatientPrefsCard patientId={profile.id} />}
-        {profile.role === "patient" && <SupervisorWhatsAppCard patientId={profile.id} />}
         <DangerZoneCard />
       </div>
     </AppShell>
