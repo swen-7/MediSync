@@ -389,6 +389,14 @@ export function MedEditor({
           </select>
         </Field>
 
+        <Field label="Meal timing">
+          <select value={mealTiming} onChange={(e) => setMealTiming(e.target.value)} className={inp}>
+            <option value="Before Meals">Before Meals</option>
+            <option value="After Meals">After Meals</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </Field>
+
         <Field label={times.length > 1 ? `Times (${times.length} doses)` : "Time"}>
           <div className="space-y-2">
             {times.map((tm, i) => (
