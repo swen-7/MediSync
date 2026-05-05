@@ -114,6 +114,7 @@ export type Database = {
           dosage: string
           frequency: string
           id: string
+          meal_timing: string
           med_name: string
           patient_id: string
           picture_url: string | null
@@ -131,6 +132,7 @@ export type Database = {
           dosage?: string
           frequency?: string
           id?: string
+          meal_timing?: string
           med_name: string
           patient_id: string
           picture_url?: string | null
@@ -148,6 +150,7 @@ export type Database = {
           dosage?: string
           frequency?: string
           id?: string
+          meal_timing?: string
           med_name?: string
           patient_id?: string
           picture_url?: string | null
