@@ -281,8 +281,12 @@ function ActiveCard({
         <div className="min-w-0">
           <div className="font-extrabold text-fs-base text-red truncate">⚠️ {a.patient_name}</div>
           <div className="text-fs-sm text-foreground mt-0.5 truncate">{a.med_name}</div>
+          {a.vital_summary && (
+            <div className="text-fs-xs text-foreground mt-0.5 truncate">{a.vital_summary}</div>
+          )}
           <div className="text-fs-xs text-muted-foreground mt-1">
-            {fmt(a.due_at)} · {minsLate}m {t("alert_overdue")}
+            {fmt(a.due_at)}
+            {a.kind !== "vital" && ` · ${minsLate}m ${t("alert_overdue")}`}
           </div>
         </div>
         {a.video_url && (
