@@ -170,6 +170,9 @@ function MedCard({
           <div className="text-fs-xs text-muted-foreground mt-0.5">
             {med.dosage} · {med.frequency} · {formatScheduledTime(med.scheduled_time, timeFmt)}
           </div>
+          {med.meal_timing && med.meal_timing !== "N/A" && (
+            <div className="text-fs-xs text-green font-bold mt-0.5">🍽 {med.meal_timing}</div>
+          )}
           <div className="flex items-center gap-2 mt-2">
             <span
               className={`px-2 py-0.5 rounded-full text-[0.7rem] font-bold ${
