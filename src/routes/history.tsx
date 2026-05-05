@@ -45,8 +45,8 @@ function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [vitals, setVitals] = useState<VitalRow[]>([]);
   const [medLogs, setMedLogs] = useState<MedLogRow[]>([]);
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
-  const [logUrls, setLogUrls] = useState<Record<string, { p1: string | null; p2: string | null }>>({});
+  const [detailLog, setDetailLog] = useState<MedLogRow | null>(null);
+  const [detailUrls, setDetailUrls] = useState<{ p1: string | null; p2: string | null } | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -98,27 +98,22 @@ function Page() {
         };
       });
       setMedLogs(logs);
-      setExpandedLogId(null);
-      setLogUrls({});
+      setDetailLog(null);
+      setDetailUrls(null);
       setLoading(false);
     });
   }, [targetPatientId]);
 
   const toggleLog = async (log: MedLogRow) => {
-    if (expandedLogId === log.id) {
-      setExpandedLogId(null);
-      return;
-    }
-    setExpandedLogId(log.id);
-    if (!logUrls[log.id]) {
-      const sign = async (path: string | null) => {
-        if (!path) return null;
-        const { data } = await supabase.storage.from("med-photos").createSignedUrl(path, 300);
-        return data?.signedUrl ?? null;
-      };
-      const [p1, p2] = await Promise.all([sign(log.photo1_url), sign(log.photo2_url)]);
-      setLogUrls((m) => ({ ...m, [log.id]: { p1, p2 } }));
-    }
+    setDetailLog(log);
+    setDetailUrls(null);
+    const sign = async (path: string | null) => {
+      if (!path) return null;
+      const { data } = await supabase.storage.from("med-photos").createSignedUrl(path, 300);
+      return data?.signedUrl ?? null;
+    };
+    const [p1, p2] = await Promise.all([sign(log.photo1_url), sign(log.photo2_url)]);
+    setDetailUrls({ p1, p2 });
   };
 
   const fmt = (iso: string) => {
