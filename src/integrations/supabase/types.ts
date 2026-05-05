@@ -300,6 +300,7 @@ export type Database = {
       }
       vitals: {
         Row: {
+          acknowledged_at: string | null
           blood_glucose: number | null
           blood_pressure_dia: number | null
           blood_pressure_sys: number | null
@@ -311,6 +312,7 @@ export type Database = {
           taken_at: string
         }
         Insert: {
+          acknowledged_at?: string | null
           blood_glucose?: number | null
           blood_pressure_dia?: number | null
           blood_pressure_sys?: number | null
@@ -322,6 +324,7 @@ export type Database = {
           taken_at?: string
         }
         Update: {
+          acknowledged_at?: string | null
           blood_glucose?: number | null
           blood_pressure_dia?: number | null
           blood_pressure_sys?: number | null
