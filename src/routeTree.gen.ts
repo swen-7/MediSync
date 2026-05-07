@@ -9,8 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UpdatePasswordRouteImport } from './routes/update-password'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PatientDashboardRouteImport } from './routes/patient-dashboard'
 import { Route as MyMedsRouteImport } from './routes/my-meds'
 import { Route as MedicationsRouteImport } from './routes/medications'
@@ -27,14 +27,14 @@ import { Route as ApiPushOnVitalRouteImport } from './routes/api.push.on-vital'
 import { Route as ApiPushOnConfirmRouteImport } from './routes/api.push.on-confirm'
 import { Route as ApiPublicHooksCheckMissedMedsRouteImport } from './routes/api.public.hooks.check-missed-meds'
 
+const UpdatePasswordRoute = UpdatePasswordRouteImport.update({
+  id: '/update-password',
+  path: '/update-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PatientDashboardRoute = PatientDashboardRouteImport.update({
@@ -126,8 +126,8 @@ export interface FileRoutesByFullPath {
   '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
   '/patient-dashboard': typeof PatientDashboardRoute
-  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
+  '/update-password': typeof UpdatePasswordRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/on-vital': typeof ApiPushOnVitalRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
@@ -145,8 +145,8 @@ export interface FileRoutesByTo {
   '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
   '/patient-dashboard': typeof PatientDashboardRoute
-  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
+  '/update-password': typeof UpdatePasswordRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/on-vital': typeof ApiPushOnVitalRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
@@ -165,8 +165,8 @@ export interface FileRoutesById {
   '/medications': typeof MedicationsRoute
   '/my-meds': typeof MyMedsRoute
   '/patient-dashboard': typeof PatientDashboardRoute
-  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
+  '/update-password': typeof UpdatePasswordRoute
   '/api/push/on-confirm': typeof ApiPushOnConfirmRoute
   '/api/push/on-vital': typeof ApiPushOnVitalRoute
   '/api/push/vapid': typeof ApiPushVapidRoute
@@ -186,8 +186,8 @@ export interface FileRouteTypes {
     | '/medications'
     | '/my-meds'
     | '/patient-dashboard'
-    | '/reset-password'
     | '/settings'
+    | '/update-password'
     | '/api/push/on-confirm'
     | '/api/push/on-vital'
     | '/api/push/vapid'
@@ -205,8 +205,8 @@ export interface FileRouteTypes {
     | '/medications'
     | '/my-meds'
     | '/patient-dashboard'
-    | '/reset-password'
     | '/settings'
+    | '/update-password'
     | '/api/push/on-confirm'
     | '/api/push/on-vital'
     | '/api/push/vapid'
@@ -224,8 +224,8 @@ export interface FileRouteTypes {
     | '/medications'
     | '/my-meds'
     | '/patient-dashboard'
-    | '/reset-password'
     | '/settings'
+    | '/update-password'
     | '/api/push/on-confirm'
     | '/api/push/on-vital'
     | '/api/push/vapid'
@@ -244,8 +244,8 @@ export interface RootRouteChildren {
   MedicationsRoute: typeof MedicationsRoute
   MyMedsRoute: typeof MyMedsRoute
   PatientDashboardRoute: typeof PatientDashboardRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
+  UpdatePasswordRoute: typeof UpdatePasswordRoute
   ApiPushOnConfirmRoute: typeof ApiPushOnConfirmRoute
   ApiPushOnVitalRoute: typeof ApiPushOnVitalRoute
   ApiPushVapidRoute: typeof ApiPushVapidRoute
@@ -254,18 +254,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/update-password': {
+      id: '/update-password'
+      path: '/update-password'
+      fullPath: '/update-password'
+      preLoaderRoute: typeof UpdatePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/patient-dashboard': {
@@ -388,8 +388,8 @@ const rootRouteChildren: RootRouteChildren = {
   MedicationsRoute: MedicationsRoute,
   MyMedsRoute: MyMedsRoute,
   PatientDashboardRoute: PatientDashboardRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
+  UpdatePasswordRoute: UpdatePasswordRoute,
   ApiPushOnConfirmRoute: ApiPushOnConfirmRoute,
   ApiPushOnVitalRoute: ApiPushOnVitalRoute,
   ApiPushVapidRoute: ApiPushVapidRoute,
