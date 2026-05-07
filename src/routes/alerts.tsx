@@ -167,9 +167,10 @@ function Page() {
     : rows.filter((r) => r.status === "confirmed" || r.resolved_at);
 
   const resolve = async (id: string) => {
+    // Optimistic UI: instantly remove the alert from the list.
+    const prev = rows;
+    setRows((rs) => rs.filter((r) => r.id !== id));
     if (id.startsWith("synth-")) {
-      // Synthetic overdue alert — no DB row to resolve. Just hide locally.
-      setRows((rs) => rs.filter((r) => r.id !== id));
       return;
     }
     if (id.startsWith("vital-")) {
@@ -178,16 +179,20 @@ function Page() {
         .from("vitals")
         .update({ acknowledged_at: new Date().toISOString() })
         .eq("id", vitalId);
-      if (error) toast.error(error.message);
-      else setReload((r) => r + 1);
+      if (error) {
+        toast.error(error.message);
+        setRows(prev);
+      }
       return;
     }
     const { error } = await supabase
       .from("medication_logs")
       .update({ resolved_at: new Date().toISOString(), resolved_by_supervisor_id: profile?.id ?? null })
       .eq("id", id);
-    if (error) toast.error(error.message);
-    else setReload((r) => r + 1);
+    if (error) {
+      toast.error(error.message);
+      setRows(prev);
+    }
   };
 
   const videoUrl = async (path: string) => {
