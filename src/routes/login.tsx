@@ -38,6 +38,8 @@ function LoginPage() {
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const isSU = mode === "signup";
+  const [forgot, setForgot] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   // Signup-only state
   const [role, setRole] = useState<AppRole>("supervisor");
@@ -143,6 +145,29 @@ function LoginPage() {
     }
   };
 
+  const sendReset = async () => {
+    const parsed = z.string().trim().email().max(255).safeParse(resetEmail);
+    if (!parsed.success) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent to your email");
+      setForgot(false);
+      setResetEmail("");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to send reset link";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // Loading spinner during the role-fetching phase to prevent white screens.
   const showSpinner = loading || (session && !profile?.role);
 
@@ -154,6 +179,40 @@ function LoginPage() {
             <div className="w-10 h-10 border-4 border-green border-t-transparent rounded-full animate-spin" />
             <div className="text-fs-sm text-muted-foreground">Signing you in…</div>
           </div>
+        ) : forgot ? (
+          <>
+            <div className="font-display text-fs-xl font-semibold mt-1.5 mb-1">
+              Reset password
+            </div>
+            <div className="text-fs-sm text-muted-foreground mb-4 leading-relaxed">
+              Enter your email and we'll send a reset link.
+            </div>
+            <div className="bg-card rounded-2xl p-5 shadow-[var(--shadow-ping)] border border-border mb-3">
+              <Field label={t("email")}>
+                <input
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  type="email"
+                  placeholder="your@email.com"
+                  className={inputCls}
+                  autoComplete="email"
+                />
+              </Field>
+            </div>
+            <button
+              onClick={sendReset}
+              disabled={busy}
+              className="w-full py-4 rounded-2xl bg-green text-white font-bold text-fs-base hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {busy ? "..." : "Send reset link"}
+            </button>
+            <button
+              onClick={() => setForgot(false)}
+              className="w-full py-4 rounded-2xl bg-green-l text-green font-bold text-fs-base mt-2.5"
+            >
+              Back to sign in
+            </button>
+          </>
         ) : (
           <>
             <div className="font-display text-fs-xl font-semibold mt-1.5 mb-1">
@@ -244,6 +303,18 @@ function LoginPage() {
             >
               {isSU ? t("have_account") : t("no_account")}
             </button>
+
+            {!isSU && (
+              <button
+                onClick={() => {
+                  setResetEmail(email);
+                  setForgot(true);
+                }}
+                className="w-full text-center text-green font-bold text-fs-sm mt-3 py-2 hover:underline"
+              >
+                Forgot password?
+              </button>
+            )}
           </>
         )}
       </div>
