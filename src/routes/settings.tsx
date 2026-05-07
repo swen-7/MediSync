@@ -226,6 +226,24 @@ function PatientPrefsCard({ patientId }: { patientId: string }) {
         setPush(data.push_notifications_enabled);
         setAff(data.affirmation_notifications_enabled);
       }
+      // Auto-fill the linked supervisor's phone if the user hasn't set one yet.
+      const { data: links } = await supabase
+        .from("patients_supervisors")
+        .select("supervisor_id")
+        .eq("patient_id", patientId)
+        .limit(1);
+      const supId = links?.[0]?.supervisor_id;
+      if (supId) {
+        const { data: sup } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", supId)
+          .maybeSingle();
+        const supPhone = sup?.phone?.trim();
+        if (supPhone && !data?.caregiver_phone) {
+          setCaregiverPhone(supPhone);
+        }
+      }
     })();
   }, [patientId]);
 
