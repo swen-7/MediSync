@@ -5,7 +5,7 @@ import { AppShell } from "@/components/ping/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/reset-password")({
+export const Route = createFileRoute("/update-password")({
   head: () => ({
     meta: [{ title: "Reset password — MediSync" }],
   }),

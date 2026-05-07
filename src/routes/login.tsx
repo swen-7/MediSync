@@ -154,7 +154,7 @@ function LoginPage() {
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/update-password`,
       });
       if (error) throw error;
       toast.success("Password reset link sent to your email");
