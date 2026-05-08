@@ -36,11 +36,14 @@ export const Route = createRootRoute({
       { title: "MediSync — Medication Reminders" },
       { name: "description", content: "MediSync keeps loved ones on schedule with photo-verified medication reminders." },
       { name: "author", content: "MediSync" },
-      { property: "og:title", content: "MediSync" },
-      { property: "og:description", content: "Photo-verified medication reminders for families and caregivers." },
+      { property: "og:title", content: "MediSync — Medication Reminders" },
+      { property: "og:description", content: "MediSync keeps loved ones on schedule with photo-verified medication reminders." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "MediSync" },
+      { name: "twitter:title", content: "MediSync — Medication Reminders" },
+      { name: "twitter:description", content: "MediSync keeps loved ones on schedule with photo-verified medication reminders." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3ecd13bd-36c8-4826-8558-ef4a6699b6e1/id-preview-b146a222--acadb336-a424-487b-8b6e-c09da07579af.lovable.app-1778133285638.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3ecd13bd-36c8-4826-8558-ef4a6699b6e1/id-preview-b146a222--acadb336-a424-487b-8b6e-c09da07579af.lovable.app-1778133285638.png" },
     ],
     links: [
       {
